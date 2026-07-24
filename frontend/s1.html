@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S1 情报流 · 算力产业投研终端</title>
+
+<style>
+:root{
+  --bg:#0B0E14; --bg2:#0E1320; --panel:#111726; --panel2:#151C2E;
+  --line:#1E2638; --line2:#2A3448;
+  --tx:#DEE4F0; --tx2:#8A94AC; --tx3:#5A6478;
+  --amber:#F5A524; --amber-bg:rgba(245,165,36,.09);
+  --good:#F0554F; --good-bg:rgba(240,85,79,.10);
+  --bad:#3DBB77; --bad-bg:rgba(61,187,119,.10);
+  --neu:#8A94AC; --neu-bg:rgba(138,148,172,.10);
+  --us:#5B8DEF; --cn:#E5615C; --hk:#B08AE8;
+  --blue:#5B8DEF;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.55 -apple-system,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif}
+a{color:var(--tx);text-decoration:none}
+a:hover{color:#fff;text-decoration:underline;text-decoration-color:var(--tx3)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ── 顶栏 ─────────────────────────── */
+header{position:sticky;top:0;z-index:50;background:rgba(11,14,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hd{max-width:1440px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.logo b{font-family:var(--mono);font-size:16px;letter-spacing:.5px;color:var(--amber)}
+.logo span{font-size:12px;color:var(--tx2)}
+.tabs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:2px}
+.tabs button{border:0;background:none;color:var(--tx2);font:inherit;font-size:13px;padding:5px 14px;border-radius:5px;cursor:pointer}
+.tabs button.on{background:var(--panel2);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line2)}
+.search{flex:1;max-width:380px;position:relative}
+.search input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:var(--tx);font:inherit;font-size:13px;padding:7px 12px 7px 32px;outline:none}
+.search input:focus{border-color:var(--line2);background:var(--panel2)}
+.search input::placeholder{color:var(--tx3)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.45}
+.search .clr{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--tx3);cursor:pointer;font-size:15px;padding:2px 6px;display:none}
+.hnav{margin-left:auto;display:flex;gap:14px;white-space:nowrap}
+.hnav a{font-size:12.5px;color:var(--tx2)}
+.hnav a:hover{color:var(--tx);text-decoration:none}
+.hnav a::after{content:"↗";font-size:10px;margin-left:2px;opacity:.6}
+.gen{font-family:var(--mono);font-size:11px;color:var(--tx3);white-space:nowrap}
+
+/* ── 布局 ─────────────────────────── */
+.wrap{max-width:1600px;margin:0 auto;padding:18px 20px 60px;display:grid;grid-template-columns:minmax(0,1fr) clamp(360px,30vw,500px);gap:18px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.phd{display:flex;align-items:baseline;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.phd h3{font-size:13px;font-weight:600;letter-spacing:.3px}
+.phd .sub{font-size:11px;color:var(--tx3)}
+.meetcard{margin:8px 0;padding:10px 12px;border-left:3px solid var(--blue);background:var(--bg2);border-radius:4px}
+.meetname{font-weight:600;font-size:13px;margin-bottom:6px;color:var(--tx)}
+.meetq{font-size:12px;line-height:1.65;color:var(--tx2);padding:6px 0;border-top:1px dashed var(--line)}
+.meetq:first-of-type{border-top:0;padding-top:0}
+.meetq.q1{font-weight:600;color:var(--tx)}
+.meetq.q2{border-left:2px solid var(--amber);padding-left:8px}
+.meetq .ql{color:var(--tx);font-weight:600}
+.meetverify{display:block;margin-top:3px}
+.meetverify.ok{color:#75D69B}.meetverify.warn{color:var(--amber)}.meetverify.unknown{color:var(--tx3)}
+.meetlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.meetlinks a{font-size:11.5px;color:#7EAEFF}
+
+/* ── 徽标 / 标签 ──────────────────── */
+.mk{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.5px;width:26px;height:17px;border-radius:4px;flex:none}
+.mk.US{color:var(--us);background:rgba(91,141,239,.13)}
+.mk.CN{color:var(--cn);background:rgba(229,97,92,.13)}
+.mk.HK{color:var(--hk);background:rgba(176,138,232,.13)}
+.mk.JP{color:#38C7B1;background:rgba(56,199,177,.13)}
+.mk.EU{color:var(--amber);background:var(--amber-bg)}
+.tier{display:inline-flex;align-items:center;font-size:10.5px;padding:1px 7px;border-radius:4px;flex:none;font-weight:500}
+.tier.重大{color:var(--amber);background:var(--amber-bg);box-shadow:inset 0 0 0 1px rgba(245,165,36,.3)}
+.tier.财报{color:#6FB4FF;background:rgba(91,141,239,.12);box-shadow:inset 0 0 0 1px rgba(91,141,239,.3)}
+.tier.会议{color:#B08AE8;background:rgba(176,138,232,.12)}
+.tier.常规{color:var(--tx3);background:rgba(138,148,172,.08)}
+.dir{display:inline-flex;font-size:10.5px;padding:1px 7px;border-radius:4px;font-weight:500;flex:none}
+.dir.利好{color:var(--good);background:var(--good-bg)}
+.dir.利空{color:var(--bad);background:var(--bad-bg)}
+.dir.中性{color:var(--neu);background:var(--neu-bg)}
+
+/* ── 公告流 ───────────────────────── */
+.dayhd{display:flex;align-items:baseline;gap:10px;padding:14px 2px 8px;position:sticky;top:52px;background:var(--bg);z-index:10}
+.dayhd .d{font-family:var(--mono);font-size:15px;font-weight:700}
+.dayhd .wk{font-size:12px;color:var(--tx2)}
+.dayhd .cnt{font-family:var(--mono);font-size:11px;color:var(--tx3);margin-left:auto}
+.dayhd .cnt em{font-style:normal;color:var(--amber)}
+.alertbox{border:1px solid rgba(245,165,36,.35);background:linear-gradient(180deg,rgba(245,165,36,.07),rgba(245,165,36,.02));border-radius:10px;margin-bottom:8px;overflow:hidden}
+.alertbox .abhd{display:flex;align-items:center;gap:7px;padding:8px 13px;font-size:11.5px;color:var(--amber);letter-spacing:.5px;border-bottom:1px solid rgba(245,165,36,.18)}
+.arow{display:flex;align-items:baseline;gap:9px;padding:8px 13px;border-bottom:1px solid rgba(245,165,36,.1)}
+.arow:last-child{border-bottom:0}
+.arow .co{font-weight:600;white-space:nowrap;cursor:pointer}
+.arow .co:hover{color:var(--amber)}
+.arow .note{color:var(--tx2);font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow .lk{margin-left:auto;flex:none;font-size:11.5px;color:var(--tx3)}
+.arow .lk:hover{color:var(--amber);text-decoration:none}
+.rows{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.row{display:flex;align-items:baseline;gap:9px;padding:7px 13px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--panel2)}
+.row .co{font-size:13px;font-weight:600;white-space:nowrap;flex:none;cursor:pointer}
+.row .co:hover{color:var(--blue)}
+.row .tk{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:none}
+.row .tt{min-width:0;flex:1;font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .tt a{color:inherit}
+.row.dim .tt a,.row.dim .co{color:var(--tx2)}
+.row .dt{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:none}
+.fold{width:100%;border:0;background:none;color:var(--tx3);font:inherit;font-size:12px;padding:7px;cursor:pointer;border-top:1px solid var(--line)}
+.fold:hover{color:var(--tx)}
+.more{display:block;width:100%;margin:16px 0 0;border:1px dashed var(--line2);background:none;color:var(--tx2);font:inherit;font-size:13px;padding:10px;border-radius:8px;cursor:pointer}
+.more:hover{color:var(--tx);border-color:var(--tx3)}
+
+/* ── 财报模块 ─────────────────────── */
+table.fin{width:100%;border-collapse:collapse;font-size:13px}
+table.fin th{font-size:11px;font-weight:500;color:var(--tx3);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);letter-spacing:.5px}
+table.fin td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+table.fin tr:last-child td{border-bottom:0}
+table.fin tr:hover td{background:var(--panel2)}
+table.fin .co{font-weight:600;cursor:pointer;white-space:nowrap}
+table.fin .co:hover{color:var(--blue)}
+table.fin .r{text-align:right}
+.filelist{display:flex;flex-direction:column;gap:3px}
+.filelist a{font-size:12.5px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px;display:block}
+.filelist a:hover{color:var(--blue)}
+.filelist a::before{content:"⤓ ";color:var(--tx3);font-size:11px}
+.finhero{overflow:hidden}
+.finintro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:linear-gradient(90deg,rgba(91,141,239,.08),rgba(245,165,36,.035))}
+.finintro .lead{font-size:13px;color:var(--tx2)}
+.finintro .stat{font-family:var(--mono);font-size:10.5px;color:var(--tx3);border:1px solid var(--line2);border-radius:999px;padding:2px 8px}
+.ecal{padding:4px 14px 14px}
+.ecday{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.ecday:first-child{border-top:0}
+.ecdate{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--tx);padding-top:7px}
+.ecdate small{display:block;color:var(--tx3);font-size:9.5px;font-weight:500;margin-top:1px}
+.ecgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.eccard{position:relative;min-width:0;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;padding:9px 10px 9px 13px;cursor:pointer;overflow:hidden}
+.eccard:hover{background:var(--panel2);border-color:#3A465E}
+.eccard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--neu)}
+.eccard.US::before{background:var(--us)}.eccard.CN::before{background:var(--cn)}.eccard.HK::before{background:var(--hk)}.eccard.JP::before{background:#38C7B1}.eccard.EU::before{background:var(--amber)}
+.ecname{display:flex;align-items:center;gap:7px;min-width:0}
+.ecname b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ectk{font-family:var(--mono);font-size:9.5px;color:var(--tx3);border-radius:3px;background:var(--line);padding:1px 5px;flex:none}
+.ecstatus{margin-left:auto;font-size:9px;line-height:1.5;border-radius:3px;padding:1px 5px;flex:none}
+.ecstatus.confirmed{color:#76D79B;background:rgba(61,187,119,.10)}
+.ecstatus.estimate{color:var(--amber);background:var(--amber-bg)}
+.ecstatus.history{color:#79A5FF;background:rgba(91,141,239,.12)}
+.ecevent{font-size:10.5px;color:var(--tx2);line-height:1.45;margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.findb{margin-top:14px;overflow:hidden}
+.dbsummary{display:flex;gap:7px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.dbsummary span{font-family:var(--mono);font-size:10.5px;color:var(--tx3);background:var(--bg2);border:1px solid var(--line);border-radius:4px;padding:3px 7px}
+.dbmarket{display:flex;align-items:baseline;gap:8px;padding:12px 14px 7px}
+.dbmarket b{font-size:12px}.dbmarket span{font-size:10px;color:var(--tx3)}
+.dbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px;padding:0 14px 12px}
+.dbcard{min-width:0;border:1px solid var(--line);border-radius:7px;background:var(--bg2);padding:9px 10px;cursor:pointer}
+.dbcard:hover{border-color:var(--line2);background:var(--panel2)}
+.dbhd{display:flex;align-items:center;gap:7px}.dbhd b{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dbhd .count{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--blue);flex:none}
+.dblatest{font-size:10.5px;color:var(--tx3);margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anasec{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px}
+.analabel{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--amber);margin-bottom:3px}
+.anatext{font-size:11.5px;color:var(--tx2);line-height:1.62}
+.anaconclusion{color:var(--tx);font-weight:600}
+.evidence{display:flex;flex-direction:column;gap:5px}
+.evline{background:var(--bg2);border-left:2px solid var(--blue);padding:6px 7px;border-radius:3px}
+.evline b{font-size:11px;color:var(--tx)}.evline span{font-size:11px;color:var(--tx2)}.evsrc{font-size:9.5px;color:var(--tx3);margin-top:2px}
+.analist{padding-left:16px}.analist li{font-size:11px;color:var(--tx2);line-height:1.55;margin:2px 0}
+.sourcebox{font-size:10px;color:var(--tx3);background:var(--bg2);border-radius:4px;padding:6px 7px;word-break:break-word}
+.dir.待核验{color:var(--amber);background:var(--amber-bg)}
+
+/* ── 公司档案 ─────────────────────── */
+.back{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);color:var(--tx2);font:inherit;font-size:12.5px;padding:6px 12px;border-radius:7px;cursor:pointer;margin-bottom:12px}
+.back:hover{color:var(--tx);border-color:var(--line2)}
+.cohd{display:flex;align-items:center;gap:14px;padding:16px;flex-wrap:wrap}
+.cohd .nm{font-size:21px;font-weight:700}
+.cohd .tk{font-family:var(--mono);font-size:14px;color:var(--tx2)}
+.cohd .latest{margin-left:auto;display:flex;gap:22px;text-align:right}
+.cohd .latest .lb{font-size:10.5px;color:var(--tx3);letter-spacing:.5px}
+.cohd .latest .v{font-family:var(--mono);font-size:17px;font-weight:600}
+.finrow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.fincell{background:var(--panel);padding:12px 14px}
+.fincell .lb{font-size:11px;color:var(--tx3);letter-spacing:.5px;display:flex;justify-content:space-between}
+.fincell .lb .u{font-size:10px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:46px;margin:9px 0 5px}
+.bars .b{flex:1;background:var(--line2);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+.bars .b.last{background:var(--blue)}
+.bars .b.neg{background:var(--bad)}
+.finvals{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.finlatest{font-family:var(--mono);font-size:12px;color:var(--tx2);margin-top:6px}
+.finlatest b{color:var(--tx);font-weight:600}
+.secgap{margin-top:14px}
+.sigrow{display:flex;align-items:baseline;gap:9px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13px}
+.sigrow:last-child{border-bottom:0}
+.sigrow .d{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:none}
+.sigrow .note{color:var(--tx2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl{position:relative;padding:4px 0}
+.tlrow{display:flex;gap:10px;padding:6px 14px;font-size:13px;align-items:baseline}
+.tlrow .d{font-family:var(--mono);font-size:11px;color:var(--tx3);flex:none;width:78px}
+.tlrow .tt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.tlrow .tt a{color:var(--tx2)}
+.tlrow .tt a:hover{color:var(--tx)}
+.empty{padding:16px 14px;font-size:12.5px;color:var(--tx3)}
+
+/* ── 多命中列表 ───────────────────── */
+.hitgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:12px}
+.hit{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer}
+.hit:hover{border-color:var(--line2)}
+.hit .nm{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hit .tk{font-family:var(--mono);font-size:11px;color:var(--tx3);margin-left:auto;flex:none}
+
+/* ── 右栏 ─────────────────────────── */
+.rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:70px}
+.trgroup{padding:6px 0}
+.trgroup .gt{display:flex;align-items:baseline;gap:7px;padding:7px 14px 4px;font-size:11.5px;color:var(--tx2);letter-spacing:.5px}
+.trgroup .gt .hint{font-size:10.5px;color:var(--tx3);margin-left:auto}
+.trow{display:flex;align-items:center;gap:9px;padding:4px 14px}
+.trow .w{font-size:12.5px;width:76px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spark{display:flex;align-items:flex-end;gap:2px;height:18px;flex:1}
+.spark i{flex:1;background:var(--line2);border-radius:1px;min-height:1px}
+.spark i.hot{background:var(--amber)}
+.trow .n{font-family:var(--mono);font-size:11px;color:var(--tx2);width:26px;text-align:right;flex:none}
+.hw{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 12px}
+.hwtag{font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:3px 8px;color:var(--tx2)}
+.hwtag b{color:var(--tx);font-weight:600}
+.hwtag .m{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-left:5px}
+.calrow{display:flex;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);align-items:baseline}
+.calrow:last-child{border-bottom:0}
+.calrow .d{font-family:var(--mono);font-size:11px;flex:none;width:44px;color:var(--tx2)}
+.pri{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:3px;flex:none}
+.pri.P0{color:#fff;background:var(--good)}
+.pri.P1{color:#0B0E14;background:var(--amber)}
+.pri.P2{color:var(--tx2);background:var(--neu-bg);box-shadow:inset 0 0 0 1px var(--line2)}
+.calrow .ev{font-size:12px;color:var(--tx);min-width:0}
+.calrow .ev .who{color:var(--tx2)}
+/* ── 涌现页 ───────────────────────── */
+.emgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.erow{padding:11px 14px;border-bottom:1px solid var(--line)}
+.erow:last-child{border-bottom:0}
+.erow .ehd{display:flex;align-items:center;gap:9px}
+.erow .ehd .spark{max-width:110px}
+.erow .caret{font-size:10px;color:var(--tx3);flex:none;width:11px}
+.erow .w{font-size:14px;font-weight:600}
+.erow .en{font-size:10.5px;color:var(--tx3)}
+.erow .tot{margin-left:auto;font-size:11px;color:var(--tx2)}
+.bspark{display:flex;gap:3px;align-items:flex-end;height:40px;margin:9px 0 3px}
+.bspark i{flex:1;background:var(--line2);border-radius:2px;min-height:2px}
+.bspark i.hot{background:var(--amber)}
+.bdates{display:flex;gap:3px;font-family:var(--mono);font-size:9px;color:var(--tx3)}
+.bdates span{flex:1;text-align:center}
+.tcos{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tco{font-size:11px;color:var(--tx2);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:2px 8px;cursor:pointer}
+.tco:hover{color:var(--tx);border-color:var(--line2)}
+.tco.plain{cursor:default}
+.wchip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--tx2);background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;user-select:none}
+.wchip:hover{color:var(--tx);border-color:var(--line2)}
+.wchip .m{font-family:var(--mono);font-size:10px;color:var(--tx3)}
+.wchip.on{color:var(--tx);border-color:rgba(245,165,36,.45);background:var(--amber-bg)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:none}
+.radar-wrap{overflow-x:auto}
+table.radar{width:100%;min-width:920px;border-collapse:collapse;font-size:12.5px}
+table.radar th{font-size:10.5px;font-weight:500;color:var(--tx3);text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);letter-spacing:.35px;white-space:nowrap}
+table.radar td{padding:10px 11px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.radar tr:last-child td{border-bottom:0}
+table.radar tbody tr:hover td{background:var(--panel2)}
+table.radar .term{font-size:13px;font-weight:650;min-width:150px}
+table.radar .r{text-align:right;white-space:nowrap}
+.scorecell{min-width:116px}
+.scoreline{display:flex;align-items:center;gap:8px}
+.scoretrack{width:68px;height:5px;background:var(--line2);border-radius:4px;overflow:hidden}
+.scoretrack i{display:block;height:100%;background:var(--amber);border-radius:4px}
+.path{color:var(--tx2);white-space:nowrap}
+.firstco{color:var(--tx2);cursor:pointer;white-space:nowrap}
+.firstco:hover{color:var(--blue)}
+.weak{color:var(--tx3)}
+.srcnote{padding:8px 14px;font-size:10.5px;color:var(--tx3);border-top:1px solid var(--line);font-family:var(--mono)}
+
+@media (min-width:1061px){
+  .rail{display:flex;flex-direction:column;max-height:calc(100vh - 88px);overflow:hidden}
+  .rail .panel.fill{flex:1;display:flex;flex-direction:column;min-height:220px}
+  .rail .panel.fill .phd{flex:none}
+}
+@media (max-width:1060px){
+  .wrap{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static}
+  .hd{flex-wrap:wrap;height:auto;padding:8px 14px;gap:8px}
+  .search{order:5;max-width:none;flex-basis:100%}
+  .gen{display:none}
+  .cohd .latest{margin-left:0;width:100%;text-align:left}
+  .finrow{grid-template-columns:1fr 1fr}
+  .emgrid{grid-template-columns:minmax(0,1fr)}
+  .ecday{grid-template-columns:1fr}.ecdate{padding-top:0}.ecgrid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  .dayhd{top:96px}
+}
+</style>
+</head>
+<body>
+
+<header><div class="hd">
+  <div class="logo"><b>S1</b><span>情报流 · 算力产业投研终端</span></div>
+  <div class="tabs">
+    <button id="tabAnn" class="on" onclick="setModule('ann')">公告</button>
+    <button id="tabFin" onclick="setModule('fin')">财报</button>
+    <button id="tabMeet" onclick="setModule('meet')">电话会议</button>
+    <button id="tabEmg" onclick="setModule('emg')">涌现</button>
+  </div>
+  <div class="search">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8A94AC" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+    <input id="q" type="text" placeholder="搜公司名 / 代码 → 直达公司档案" autocomplete="off">
+    <button class="clr" id="qclr" onclick="clearSearch()">✕</button>
+  </div>
+  <nav class="hnav">
+    <a href="/ai-map/console.html" target="_blank" rel="noopener" title="内部总控台（需登录）">总控台</a>
+    <a href="/ai-map/" target="_blank" rel="noopener" title="算力版图主站">版图主站</a>
+    <a href="/ai-map/desk.html" target="_blank" rel="noopener" title="待批队列（需登录）">desk 待批</a>
+  </nav>
+  <span class="gen" id="gen"></span>
+</div></header>
+
+<div class="wrap">
+  <main id="main"></main>
+  <aside class="rail" id="rail"></aside>
+</div>
+
+<script>
+"use strict";
+/* ════════════ 数据契约 ════════════
+   真实数据: https://your-domain.example/ai-map/s1data/feed.json
+             https://your-domain.example/ai-map/s1data/finfacts.json
+             https://your-domain.example/ai-map/s1data/co/<ticker>.json
+   fetch 失败 → 退回内嵌 MOCK（字段结构与真实数据完全一致）*/
+var DATA_BASE = "s1data/";  // 同域相对路径(your-domain/lobsterdiary 双域名兼容)
+
+/* ── 内嵌 mock：feed.json 快照（截取）── */
+var MOCK_FEED = {
+"generated":"2026-07-12 09:14",
+"dates":["2026-07-06","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12"],
+"days":[
+ {"date":"2026-07-12","total":31,"tiers":{"常规":26,"重大":5},
+  "signals":[{"ticker":"688072","name":"拓荆科技","market":"CN","type":"并购重组","dir":"利好","note":"发行股份购买资产并募集配套资金","title":"拓荆科技股份有限公司发行股份及支付现金购买资产并募集配套资金预案（摘要）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419766.PDF"}],
+  "alerts":[{"ticker":"688072","name":"拓荆科技","market":"CN","type":"并购重组","dir":"利好","note":"发行股份购买资产并募集配套资金","title":"拓荆科技股份有限公司发行股份及支付现金购买资产并募集配套资金预案（摘要）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419766.PDF"}]},
+ {"date":"2026-07-11","total":54,"tiers":{"常规":48,"重大":6},
+  "signals":[{"ticker":"01816","name":"中广核电力","market":"HK","type":"人事变动","dir":"中性","note":"委任独立非执行董事","title":"(1) 獨立非執行董事的委任及(2) 2026年第二次臨時股東會通告","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000260_c.pdf"}],
+  "alerts":[]},
+ {"date":"2026-07-10","total":117,"tiers":{"常规":107,"重大":10},
+  "signals":[
+   {"ticker":"688111","name":"金山办公","market":"CN","type":"回购增持","dir":"利好","note":"公司首次回购股份并进展","title":"金山办公关于以集中竞价交易方式首次回购公司股份暨回购进展的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-08/1225413184.PDF"},
+   {"ticker":"688249","name":"晶合集成","market":"CN","type":"融资稀释","dir":"中性","note":"境外H股公开发行价格公告","title":"晶合集成关于境外上市股份（H股）公开发行价格的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225414903.PDF"},
+   {"ticker":"02513","name":"智谱","market":"HK","type":"融资稀释","dir":"利空","note":"智谱配售新H股稀释股权","title":"根據一般授權配售新H股","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900036_c.pdf"},
+   {"ticker":"00100","name":"MiniMax","market":"HK","type":"融资稀释","dir":"利空","amt":"6500百万港元","note":"MiniMax配售新股并发行可转债","title":"(1)根據一般授權配售35,600,000新A類股份；(2)擬根據一般授權同步發行6,500百萬港元於2027年到期之零息有擔保可轉換債券","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000028_c.pdf"},
+   {"ticker":"688072","name":"拓荆科技","market":"CN","type":"融资稀释","dir":"中性","note":"调整定增募投项目投入金额","title":"中信建投证券关于拓荆科技调整向特定对象发行股票募集资金投资项目投入金额的核查意见","url":"http://static.cninfo.com.cn/finalpage/2026-07-08/1225414084.PDF"}],
+  "alerts":[
+   {"ticker":"02513","name":"智谱","market":"HK","type":"融资稀释","dir":"利空","note":"智谱配售新H股稀释股权","title":"根據一般授權配售新H股","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900036_c.pdf"},
+   {"ticker":"00100","name":"MiniMax","market":"HK","type":"融资稀释","dir":"利空","note":"MiniMax配售新股并发行可转债","title":"(1)根據一般授權配售35,600,000新A類股份…","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000028_c.pdf"},
+   {"ticker":"688249","name":"晶合集成","market":"CN","type":"融资稀释","dir":"中性","note":"境外H股公开发行价格公告","title":"晶合集成关于境外上市股份（H股）公开发行价格的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225414903.PDF"}]}
+],
+"all":[
+ {"d":"2026-07-12","m":"CN","n":"拓荆科技","tk":"688072","tier":"重大","t":"拓荆科技股份有限公司发行股份及支付现金购买资产并募集配套资金预案（摘要）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419766.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"拓荆科技","tk":"688072","tier":"重大","t":"董事会关于本次交易是否构成重大资产重组、关联交易及重组上市的说明","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419787.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"拓荆科技","tk":"688072","tier":"重大","t":"董事会关于本次交易符合《上市公司重大资产重组管理办法》第十一条、第四十三条和第四十四条规定的说明","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419769.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"拓荆科技","tk":"688072","tier":"常规","t":"关于披露发行股份及支付现金购买资产并募集配套资金预案的一般性风险提示暨公司股票复牌的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419780.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"拓荆科技","tk":"688072","tier":"常规","t":"第二届董事会第二十七次会议决议公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419763.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"华海清科","tk":"688120","tier":"常规","t":"2026年限制性股票激励计划（草案修订稿）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419952.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"华海清科","tk":"688120","tier":"常规","t":"2026年限制性股票激励计划（草案修订稿）摘要公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419949.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"晶合集成","tk":"688249","tier":"常规","t":"晶合集成关于境外上市股份（H股）挂牌并上市交易暨股份变动的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419226.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"晶合集成","tk":"688249","tier":"常规","t":"简式权益变动报告书（香港华勤）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419229.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"中微公司","tk":"688012","tier":"常规","t":"关于持股5%以上股东权益变动触及1%刻度的提示性公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225420456.PDF"},
+ {"d":"2026-07-12","m":"CN","n":"巨化股份","tk":"600160","tier":"常规","t":"巨化股份2026年上半年度主要经营数据公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225418588.PDF"},
+ {"d":"2026-07-11","m":"HK","n":"MiniMax","tk":"00100","tier":"重大","t":"(1)根據一般授權配售35,600,000新A類股份；(2)擬根據一般授權同步發行6,500百萬港元於2027年到期之零息有擔保可轉換債券","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000028_c.pdf"},
+ {"d":"2026-07-11","m":"CN","n":"拓荆科技","tk":"688072","tier":"重大","t":"董事会关于本次交易符合上市公司监管指引第9号规定的说明","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419775.PDF"},
+ {"d":"2026-07-11","m":"CN","n":"拓荆科技","tk":"688072","tier":"常规","t":"拓荆科技股份有限公司发行股份及支付现金购买资产并募集配套资金预案","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419777.PDF"},
+ {"d":"2026-07-11","m":"CN","n":"华海清科","tk":"688120","tier":"常规","t":"2026年限制性股票激励计划实施考核管理办法（修订稿）","url":"http://static.cninfo.com.cn/finalpage/2026-07-11/1225419957.PDF"},
+ {"d":"2026-07-11","m":"HK","n":"优必选","tk":"09880","tier":"常规","t":"內幕消息 - 本公司H股全流通獲聯交所授出上市批准","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071001416_c.pdf"},
+ {"d":"2026-07-11","m":"US","n":"Broadcom","tk":"AVGO","tier":"常规","t":"FORM 4","url":"https://www.sec.gov/Archives/edgar/data/1730168/000173016826000068/xslF345X06/wk-form4_1783723427.xml"},
+ {"d":"2026-07-11","m":"US","n":"Zoom","tk":"ZM","tier":"常规","t":"144","url":"https://www.sec.gov/Archives/edgar/data/1585521/000195004726006998/xsl144X01/primary_doc.xml"},
+ {"d":"2026-07-11","m":"HK","n":"中广核电力","tk":"01816","tier":"常规","t":"內幕消息 - 2026年第二季度運營簡報","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000485_c.pdf"},
+ {"d":"2026-07-11","m":"HK","n":"贝壳","tk":"02423","tier":"常规","t":"翌日披露報表","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000868_c.pdf"},
+ {"d":"2026-07-11","m":"US","n":"Circle","tk":"CRCL","tier":"常规","t":"FORM 4","url":"https://www.sec.gov/Archives/edgar/data/1876042/000187604226000225/xslF345X06/wk-form4_1783717205.xml"},
+ {"d":"2026-07-11","m":"CN","n":"中际旭创","tk":"300308","tier":"常规","t":"关于使用部分自有资金进行现金管理的进展公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-10/1225416724.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"金山办公","tk":"688111","tier":"重大","t":"金山办公关于以集中竞价交易方式首次回购公司股份暨回购进展的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-08/1225413184.PDF"},
+ {"d":"2026-07-10","m":"HK","n":"智谱","tk":"02513","tier":"重大","t":"根據一般授權配售新H股","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900036_c.pdf"},
+ {"d":"2026-07-10","m":"US","n":"Coinbase","tk":"COIN","tier":"重大","t":"8-K","url":"https://www.sec.gov/Archives/edgar/data/1679788/000119312526299667/d74758d8k.htm"},
+ {"d":"2026-07-10","m":"US","n":"Marvell","tk":"MRVL","tier":"重大","t":"8-K","url":"https://www.sec.gov/Archives/edgar/data/1835632/000119312526299843/d82462d8k.htm"},
+ {"d":"2026-07-10","m":"US","n":"NextEra Energy","tk":"NEE","tier":"重大","t":"FORM 8-K","url":"https://www.sec.gov/Archives/edgar/data/753308/000110465926081863/tm2614888d16_8k.htm"},
+ {"d":"2026-07-10","m":"US","n":"Amazon AWS","tk":"AMZN","tier":"重大","t":"FORM 8-K","url":"https://www.sec.gov/Archives/edgar/data/1018724/000110465926082293/tm2619352d4_8k.htm"},
+ {"d":"2026-07-10","m":"US","n":"小马智行","tk":"PONY","tier":"重大","t":"FORM 6-K","url":"https://www.sec.gov/Archives/edgar/data/1969302/000110465926082064/tm2620042d1_6k.htm"},
+ {"d":"2026-07-10","m":"US","n":"ASE / 日月光","tk":"ASX","tier":"重大","t":"FORM 6-K","url":"https://www.sec.gov/Archives/edgar/data/1122411/000095010326010427/dp249884_6k.htm"},
+ {"d":"2026-07-10","m":"CN","n":"申菱环境","tk":"301018","tier":"重大","t":"关于收购全资孙公司100%股权的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-08/1225415675.PDF"},
+ {"d":"2026-07-10","m":"HK","n":"MiniMax","tk":"00100","tier":"重大","t":"(1)根據一般授權配售35,600,000新A類股份；(2)擬同步發行6,500百萬港元零息有擔保可轉換債券","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0710/2026071000028_c.pdf"},
+ {"d":"2026-07-10","m":"US","n":"TSMC / 台积电","tk":"TSM","tier":"常规","t":"FORM 4","url":"https://www.sec.gov/Archives/edgar/data/1046179/000104617926000445/xslF345X06/wk-form4_1783592105.xml"},
+ {"d":"2026-07-10","m":"US","n":"CoreWeave","tk":"CRWV","tier":"常规","t":"PRIMARY DOCUMENT","url":"https://www.sec.gov/Archives/edgar/data/1769628/000176962826000318/xslF345X06/form4.xml"},
+ {"d":"2026-07-10","m":"US","n":"Snowflake","tk":"SNOW","tier":"常规","t":"FORM 4","url":"https://www.sec.gov/Archives/edgar/data/1640147/000143364426000015/xslF345X06/wk-form4_1783551784.xml"},
+ {"d":"2026-07-10","m":"US","n":"Cloudflare","tk":"NET","tier":"常规","t":"FORM 4","url":"https://www.sec.gov/Archives/edgar/data/1477333/000136657426000018/xslF345X06/wk-form4_1783544538.xml"},
+ {"d":"2026-07-10","m":"US","n":"Figma","tk":"FIG","tier":"常规","t":"4","url":"https://www.sec.gov/Archives/edgar/data/1579878/000207359026000024/xslF345X06/form4-07082026_080741.xml"},
+ {"d":"2026-07-10","m":"US","n":"DeepMind","tk":"GOOGL","tier":"常规","t":"144","url":"https://www.sec.gov/Archives/edgar/data/1652044/000196858226000714/xsl144X01/primary_doc.xml"},
+ {"d":"2026-07-10","m":"HK","n":"阿里通义","tk":"09988","tier":"常规","t":"翌日披露報表","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900952_c.pdf"},
+ {"d":"2026-07-10","m":"HK","n":"可灵（快手）","tk":"01024","tier":"常规","t":"翌日披露報表","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070901122_c.pdf"},
+ {"d":"2026-07-10","m":"HK","n":"Insilico Medicine","tk":"03696","tier":"常规","t":"正面盈利預警","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0709/2026070900040_c.pdf"},
+ {"d":"2026-07-10","m":"CN","n":"中微公司","tk":"688012","tier":"常规","t":"2026年第一次临时股东会会议资料","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225417107.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"华大九天","tk":"301269","tier":"常规","t":"第二届董事会第二十五次会议决议公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225417721.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"长电科技","tk":"600584","tier":"常规","t":"关于2025年股票期权激励计划获得批复的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225415793.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"新易盛","tk":"300502","tier":"常规","t":"关于完成工商登记变更并换发营业执照的公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225416901.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"三峡能源","tk":"600905","tier":"常规","t":"2026年第二季度发电量完成情况公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-09/1225415853.PDF"},
+ {"d":"2026-07-10","m":"CN","n":"长江电力","tk":"600900","tier":"常规","t":"长江电力2025年年度权益分派实施公告","url":"http://static.cninfo.com.cn/finalpage/2026-07-10/1225416894.PDF"},
+ {"d":"2026-07-10","m":"US","n":"AppLovin","tk":"APP","tier":"常规","t":"PRIMARY DOCUMENT","url":"https://www.sec.gov/Archives/edgar/data/1751008/000120918926000008/xslF345X06/primarydocument.xml"},
+ {"d":"2026-07-10","m":"US","n":"Arista Networks","tk":"ANET","tier":"常规","t":"144","url":"https://www.sec.gov/Archives/edgar/data/1596532/000195917326005182/xsl144X01/primary_doc.xml"},
+ {"d":"2026-07-10","m":"US","n":"Workday","tk":"WDAY","tier":"常规","t":"144","url":"https://www.sec.gov/Archives/edgar/data/1327811/000195004726006985/xsl144X01/primary_doc.xml"}
+],
+"fin_by_co":[
+ {"n":"拓荆科技","tk":"688072","m":"CN","items":[
+   {"d":"2026-04-25","t":"2026年第一季度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-25/mock-q1.PDF"},
+   {"d":"2026-04-10","t":"2025年年度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-10/mock-fy25.PDF"},
+   {"d":"2025-08-28","t":"2025年半年度报告","url":"http://static.cninfo.com.cn/finalpage/2025-08-28/mock-h1.PDF"}]},
+ {"n":"中微公司","tk":"688012","m":"CN","items":[
+   {"d":"2026-04-29","t":"2026年第一季度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-29/mock-q1.PDF"},
+   {"d":"2026-03-28","t":"2025年年度报告","url":"http://static.cninfo.com.cn/finalpage/2026-03-28/mock-fy25.PDF"}]},
+ {"n":"中际旭创","tk":"300308","m":"CN","items":[
+   {"d":"2026-04-22","t":"2026年第一季度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-22/mock-q1.PDF"},
+   {"d":"2026-04-08","t":"2025年年度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-08/mock-fy25.PDF"}]},
+ {"n":"华海清科","tk":"688120","m":"CN","items":[
+   {"d":"2026-04-26","t":"2026年第一季度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-26/mock-q1.PDF"},
+   {"d":"2026-04-15","t":"2025年年度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-15/mock-fy25.PDF"}]},
+ {"n":"晶合集成","tk":"688249","m":"CN","items":[
+   {"d":"2026-04-28","t":"2026年第一季度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-28/mock-q1.PDF"},
+   {"d":"2026-04-18","t":"2025年年度报告","url":"http://static.cninfo.com.cn/finalpage/2026-04-18/mock-fy25.PDF"}]},
+ {"n":"NVIDIA","tk":"NVDA","m":"US","items":[
+   {"d":"2026-05-28","t":"10-Q FY27Q1","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=NVDA&type=10-Q"},
+   {"d":"2026-02-26","t":"10-K FY26","url":"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=NVDA&type=10-K"}]},
+ {"n":"MiniMax","tk":"00100","m":"HK","items":[
+   {"d":"2026-03-25","t":"2025年年度業績公告","url":"https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0325/mock-fy25.pdf"}]}
+],
+"trends":{
+ "玲姐尺":[
+  {"w":"扩产","seq":[1,2,0,3,2,4,5],"total":17,"cos":["北方华创","拓荆科技","华海清科","晶合集成","中微公司"]},
+  {"w":"先进封装","seq":[2,1,3,2,4,3,3],"total":18,"cos":["长电科技","通富微电","盛合晶微","ASMPT"]},
+  {"w":"产能爬坡","seq":[0,1,2,2,3,2,2],"total":12,"cos":["晶合集成","中际旭创","新易盛"]},
+  {"w":"重组","seq":[0,0,0,0,0,7,8],"total":15,"cos":["拓荆科技"]},
+  {"w":"HBM","seq":[1,0,2,1,3,2,2],"total":11,"cos":["长鑫科技CXMT","通富微电","盛合晶微"]},
+  {"w":"混合键合","seq":[0,1,0,2,1,2,3],"total":9,"cos":["盛合晶微","长电科技","ASMPT"]},
+  {"w":"TCB","seq":[0,0,1,0,2,1,2],"total":6,"cos":["ASMPT","长川科技"]},
+  {"w":"引线键合","seq":[0,0,1,1,0,2,1],"total":5,"cos":["ASMPT","长电科技","通富微电"]},
+  {"w":"回购","seq":[0,0,0,0,4,0,0],"total":4,"cos":["金山办公"]},
+  {"w":"砍单","seq":[0,0,1,0,0,0,1],"total":2,"cos":[]},
+  {"w":"定增","seq":[0,0,0,0,1,0,0],"total":1,"cos":["拓荆科技"]}],
+ "前哨尺":[
+  {"w":"液冷","seq":[2,1,2,3,2,4,3],"total":17,"cos":["英维克","申菱环境","科华数据"]},
+  {"w":"具身智能","seq":[1,0,2,1,2,3,2],"total":11,"cos":["优必选","地平线机器人"]},
+  {"w":"人形机器人","seq":[0,1,1,2,2,2,3],"total":11,"cos":["优必选"]},
+  {"w":"核电","seq":[0,1,1,1,2,2,2],"total":9,"cos":["中广核电力","Oklo","Constellation Energy"]},
+  {"w":"AI眼镜","seq":[1,1,0,2,1,1,2],"total":8,"cos":["美图公司"]},
+  {"w":"物理AI","seq":[0,0,1,0,1,2,1],"total":5,"cos":["小马智行"]},
+  {"w":"支付","seq":[0,0,0,0,2,5,5],"total":12,"cos":["Coinbase","Circle"]}]
+},
+"hotwords":[
+ {"w":"产能爬坡","count":12,"companies":5},
+ {"w":"键合设备","count":4,"companies":3},
+ {"w":"固晶机","count":3,"companies":2},
+ {"w":"划片机","count":2,"companies":2},
+ {"w":"薄膜沉积设备","count":1,"companies":1},
+ {"w":"发行股份购买资产","count":1,"companies":1},
+ {"w":"可转换债券","count":1,"companies":1},
+ {"w":"配套募资","count":1,"companies":1},
+ {"w":"氟化工","count":1,"companies":1}
+],
+"calendar":[
+ {"date":"2026-07-14","ticker":"00100","name":"MiniMax","event":"配售交割(268港元×3560万股)","pri":"P0"},
+ {"date":"2026-07-15","ticker":"-","name":"监管","event":"未成年人虚拟陪伴新规执行(星野/Talkie/猫箱)","pri":"P1"},
+ {"date":"2026-07-15","ticker":"00100.HK","name":"MiniMax","event":"复核: 2026-07中旬(DI披露窗口)→10月b组解禁","pri":"P2"},
+ {"date":"2026-07-16","ticker":"00100","name":"MiniMax","event":"可转债发行完成(65亿港元·转股价335)","pri":"P0"},
+ {"date":"2026-07-28","ticker":"MSFT","name":"Microsoft Azure","event":"复核: 2026-07-28（FY26Q4财报日估计·待确认）","pri":"P2"},
+ {"date":"2026-07-28","ticker":"COIN","name":"Coinbase","event":"复核: 2026-07-30(Q2'26财报·按历史节奏估计·待确认)","pri":"P2"}
+],
+"cos":[
+ {"n":"NVIDIA","tk":"NVDA","m":"US"},{"n":"AMD","tk":"AMD","m":"US"},{"n":"Broadcom","tk":"AVGO","m":"US"},{"n":"Marvell","tk":"MRVL","m":"US"},{"n":"Qualcomm","tk":"QCOM","m":"US"},{"n":"ARM Holdings","tk":"ARM","m":"US"},{"n":"Micron","tk":"MU","m":"US"},{"n":"TSMC / 台积电","tk":"TSM","m":"US"},{"n":"ASML","tk":"ASML","m":"US"},{"n":"Lam Research","tk":"LRCX","m":"US"},{"n":"Applied Materials","tk":"AMAT","m":"US"},{"n":"KLA","tk":"KLAC","m":"US"},{"n":"Synopsys","tk":"SNPS","m":"US"},{"n":"Cadence","tk":"CDNS","m":"US"},{"n":"Arista Networks","tk":"ANET","m":"US"},{"n":"ASE / 日月光","tk":"ASX","m":"US"},{"n":"FormFactor","tk":"FORM","m":"US"},{"n":"Monolithic Power","tk":"MPWR","m":"US"},{"n":"Microsoft Azure","tk":"MSFT","m":"US"},{"n":"Amazon AWS","tk":"AMZN","m":"US"},{"n":"DeepMind","tk":"GOOGL","m":"US"},{"n":"Meta AI","tk":"META","m":"US"},{"n":"Oracle Cloud","tk":"ORCL","m":"US"},{"n":"CoreWeave","tk":"CRWV","m":"US"},{"n":"Nebius","tk":"NBIS","m":"US"},{"n":"Equinix","tk":"EQIX","m":"US"},{"n":"万国数据","tk":"GDS","m":"US"},{"n":"世纪互联","tk":"VNET","m":"US"},{"n":"Snowflake","tk":"SNOW","m":"US"},{"n":"MongoDB","tk":"MDB","m":"US"},{"n":"Salesforce(Agentforce)","tk":"CRM","m":"US"},{"n":"ServiceNow","tk":"NOW","m":"US"},{"n":"UiPath","tk":"PATH","m":"US"},{"n":"Palantir","tk":"PLTR","m":"US"},{"n":"Figma","tk":"FIG","m":"US"},{"n":"Shopify","tk":"SHOP","m":"US"},{"n":"HubSpot","tk":"HUBS","m":"US"},{"n":"Workday","tk":"WDAY","m":"US"},{"n":"Zoom","tk":"ZM","m":"US"},{"n":"Cloudflare","tk":"NET","m":"US"},{"n":"Coinbase","tk":"COIN","m":"US"},{"n":"Circle","tk":"CRCL","m":"US"},{"n":"AppLovin","tk":"APP","m":"US"},{"n":"Duolingo","tk":"DUOL","m":"US"},{"n":"好未来","tk":"TAL","m":"US"},{"n":"小马智行","tk":"PONY","m":"US"},{"n":"Tesla（FSD）","tk":"TSLA","m":"US"},{"n":"Cerebras","tk":"CBRS","m":"US"},{"n":"Recursion Pharma","tk":"RXRX","m":"US"},{"n":"Constellation Energy","tk":"CEG","m":"US"},{"n":"Talen Energy","tk":"TLN","m":"US"},{"n":"Vistra","tk":"VST","m":"US"},{"n":"NRG Energy","tk":"NRG","m":"US"},{"n":"NextEra Energy","tk":"NEE","m":"US"},{"n":"Oklo","tk":"OKLO","m":"US"},{"n":"Eaton","tk":"ETN","m":"US"},{"n":"Vertiv","tk":"VRT","m":"US"},
+ {"n":"寒武纪","tk":"688256","m":"CN"},{"n":"海光信息","tk":"688041","m":"CN"},{"n":"中芯国际","tk":"688981","m":"CN"},{"n":"长鑫科技CXMT","tk":"688403","m":"CN"},{"n":"拓荆科技","tk":"688072","m":"CN"},{"n":"北方华创","tk":"002371","m":"CN"},{"n":"中微公司","tk":"688012","m":"CN"},{"n":"华海清科","tk":"688120","m":"CN"},{"n":"晶合集成","tk":"688249","m":"CN"},{"n":"长川科技","tk":"300604","m":"CN"},{"n":"通富微电","tk":"002156","m":"CN"},{"n":"长电科技","tk":"600584","m":"CN"},{"n":"盛合晶微","tk":"688820","m":"CN"},{"n":"罗博特科","tk":"300757","m":"CN"},{"n":"华大九天","tk":"301269","m":"CN"},{"n":"中际旭创","tk":"300308","m":"CN"},{"n":"新易盛","tk":"300502","m":"CN"},{"n":"天孚通信","tk":"300394","m":"CN"},{"n":"源杰科技","tk":"688498","m":"CN"},{"n":"光迅科技","tk":"002281","m":"CN"},{"n":"金山办公","tk":"688111","m":"CN"},{"n":"科大讯飞","tk":"002230","m":"CN"},{"n":"中国平安","tk":"601318","m":"CN"},{"n":"金盘科技","tk":"688676","m":"CN"},{"n":"科华数据","tk":"002335","m":"CN"},{"n":"润泽科技","tk":"300442","m":"CN"},{"n":"英维克","tk":"002837","m":"CN"},{"n":"申菱环境","tk":"301018","m":"CN"},{"n":"三峡能源","tk":"600905","m":"CN"},{"n":"长江电力","tk":"600900","m":"CN"},{"n":"协鑫能科","tk":"002015","m":"CN"},{"n":"巨化股份","tk":"600160","m":"CN"},
+ {"n":"阿里通义","tk":"09988","m":"HK"},{"n":"百度（文心Agent）","tk":"09888","m":"HK"},{"n":"京东","tk":"09618","m":"HK"},{"n":"可灵（快手）","tk":"01024","m":"HK"},{"n":"智谱","tk":"02513","m":"HK"},{"n":"MiniMax","tk":"00100","m":"HK"},{"n":"美图公司","tk":"01357","m":"HK"},{"n":"迈富时","tk":"02556","m":"HK"},{"n":"地平线机器人","tk":"09660","m":"HK"},{"n":"优必选","tk":"09880","m":"HK"},{"n":"ASMPT","tk":"00522","m":"HK"},{"n":"万国数据","tk":"09698","m":"HK"},{"n":"贝壳","tk":"02423","m":"HK"},{"n":"猎聘","tk":"06100","m":"HK"},{"n":"Insilico Medicine","tk":"03696","m":"HK"},{"n":"中广核电力","tk":"01816","m":"HK"}
+]};
+
+/* ── 内嵌 mock：finfacts.json（A股财务序列，亿元；除688072外为演示数据）── */
+var MOCK_FINFACTS = {
+ "688072":{"n":"拓荆科技","years":["2021","2022","2023","2024","2025"],"rev":[7.58,17.06,27.05,41.03,65.19],"np":[0.68,3.68,6.63,6.88,9.27],"gm":[44.1,49.3,47.1,41.7,34.9],"capex":[1.5,1.11,4.81,6.86,5.75],"latest":{"rev":11.12,"np":5.71,"date":"2026-03-31"}},
+ "688012":{"n":"中微公司","years":["2021","2022","2023","2024","2025"],"rev":[31.08,47.4,62.64,90.65,118.2],"np":[10.11,11.7,17.86,16.13,21.4],"gm":[43.4,45.7,45.8,44.1,43.2],"capex":[3.2,8.5,14.2,18.9,16.4],"latest":{"rev":28.3,"np":4.9,"date":"2026-03-31"}},
+ "300308":{"n":"中际旭创","years":["2021","2022","2023","2024","2025"],"rev":[77.0,96.4,107.2,238.6,412.5],"np":[8.77,12.2,21.7,51.7,86.3],"gm":[26.2,29.2,33.0,33.6,35.4],"capex":[4.1,5.6,7.9,19.5,32.8],"latest":{"rev":128.4,"np":27.6,"date":"2026-03-31"}},
+ "688120":{"n":"华海清科","years":["2021","2022","2023","2024","2025"],"rev":[8.05,16.5,25.1,34.1,44.8],"np":[1.98,5.02,7.24,10.2,12.6],"gm":[45.4,46.8,46.3,45.9,44.7],"capex":[0.9,1.8,3.1,4.6,5.2],"latest":{"rev":12.4,"np":3.4,"date":"2026-03-31"}},
+ "688249":{"n":"晶合集成","years":["2021","2022","2023","2024","2025"],"rev":[54.3,100.5,72.4,92.5,108.7],"np":[17.3,30.5,2.12,3.94,6.8],"gm":[45.1,46.2,21.6,25.9,27.4],"capex":[48.2,62.4,38.6,42.1,45.3],"latest":{"rev":29.6,"np":2.1,"date":"2026-03-31"}}
+};
+
+/* ════════════ 状态 & 数据加载 ════════════ */
+var FEED = MOCK_FEED, FINF = MOCK_FINFACTS, COCACHE = {};
+var LIVE = false;
+var state = { module:"ann", daysShown:3, q:"", co:null };
+var WK = ["周日","周一","周二","周三","周四","周五","周六"];
+
+function fetchJSON(url){
+  return fetch(url,{cache:"no-store"}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); });
+}
+function loadData(){
+  fetchJSON(DATA_BASE+"feed.json").then(function(j){ FEED=j; LIVE=true; render(); }).catch(function(){});
+  fetchJSON(DATA_BASE+"finfacts.json").then(function(j){ FINF=j; render(); }).catch(function(){});
+}
+function loadCo(tk){
+  if(COCACHE[tk]) return Promise.resolve(COCACHE[tk]);
+  return fetchJSON(DATA_BASE+"co/"+tk+".json").then(function(j){ COCACHE[tk]=j; return j; }).catch(function(){ return null; });
+}
+
+/* ════════════ 工具 ════════════ */
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function wk(d){ var t=new Date(d+"T00:00:00"); return isNaN(t)?"":WK[t.getDay()]; }
+function md(d){ return d? d.slice(5).replace("-","/") : ""; }
+function coList(){
+  var map={}, out=[];
+  (FEED.cos||[]).forEach(function(c){ if(!map[c.tk]){map[c.tk]=1; out.push(c);} });
+  (FEED.all||[]).forEach(function(a){ if(!map[a.tk]){map[a.tk]=1; out.push({n:a.n,tk:a.tk,m:a.m});} });
+  return out;
+}
+function findCo(tk){ var l=coList(); for(var i=0;i<l.length;i++) if(l[i].tk===tk) return l[i]; return null; }
+function matchCos(q){
+  q=q.trim().toLowerCase(); if(!q) return [];
+  return coList().filter(function(c){
+    return c.n.toLowerCase().indexOf(q)>=0 || c.tk.toLowerCase().indexOf(q)>=0;
+  });
+}
+function mkBadge(m){ return '<span class="mk '+esc(m)+'">'+esc(m)+'</span>'; }
+function tierTag(t){ return '<span class="tier '+esc(t)+'">'+esc(t)+'</span>'; }
+function dirTag(d){ return d? '<span class="dir '+esc(d)+'">'+esc(d)+'</span>':""; }
+
+/* ════════════ 渲染：公告模块（默认维度一）════════════ */
+function daysSorted(){
+  return (FEED.days||[]).slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+}
+function annForDay(date){
+  return (FEED.all||[]).filter(function(a){ return a.d===date; });
+}
+function renderAnnModule(){
+  var days = daysSorted().slice(0, state.daysShown);
+  var h = "";
+  days.forEach(function(day, di){
+    var anns = annForDay(day.date);
+    var tiers = day.tiers||{};
+    var tierStr = Object.keys(tiers).map(function(k){ return k+" "+tiers[k]; }).join(" · ");
+    h += '<div class="dayhd"><span class="d num">'+esc(day.date)+'</span><span class="wk">'+wk(day.date)+(di===0?' · 今天':'')+'</span>'
+       + '<span class="cnt num">共 <em>'+(day.total||anns.length)+'</em> 条 · '+esc(tierStr)+'</span></div>';
+    // 告警置顶
+    var alerts = day.signals && day.signals.length ? day.signals : (day.alerts||[]);
+    if(alerts.length){
+      h += '<div class="alertbox"><div class="abhd">▲ 信号告警 · '+alerts.length+' 条</div>';
+      alerts.forEach(function(s){
+        h += '<div class="arow">'+mkBadge(s.market||mktOf(s.ticker))+dirTag(s.dir)
+           + '<span class="tier 重大">'+esc(s.type)+'</span>'
+           + '<span class="co" onclick="openCo(\''+esc(s.ticker)+'\')">'+esc(s.name)+'</span>'
+           + '<span class="note" title="'+esc(s.title)+'">'+esc(s.note||s.title)+(s.amt?' · '+esc(s.amt):'')+'</span>'
+           + (s.url?'<a class="lk" href="'+esc(s.url)+'" target="_blank" rel="noopener">原文 ↗</a>':'')
+           + '</div>';
+      });
+      h += '</div>';
+    }
+    // 流水：重大在前
+    anns.sort(function(a,b){
+      var w=function(t){ return t==="财报"?0:t==="重大"?1:t==="会议"?2:3; };
+      return w(a.tier)-w(b.tier);
+    });
+    var LIMIT = 20;
+    var head = anns.slice(0,LIMIT), tail = anns.slice(LIMIT);
+    h += '<div class="rows">';
+    head.forEach(function(a){ h += annRow(a); });
+    if(tail.length){
+      h += '<div id="tail-'+esc(day.date)+'" style="display:none">';
+      tail.forEach(function(a){ h += annRow(a); });
+      h += '</div><button class="fold" onclick="toggleTail(\''+esc(day.date)+'\',this)">展开其余 '+tail.length+' 条常规 ▾</button>';
+    }
+    if(!anns.length) h += '<div class="empty">当日暂无公告数据'+(LIVE?'':'（mock 快照仅含近三日明细）')+'</div>';
+    h += '</div>';
+  });
+  var total = daysSorted().length;
+  if(state.daysShown < Math.max(total,(FEED.dates||[]).length)){
+    h += '<button class="more" onclick="moreDays()">↓ 继续下翻更早日期</button>';
+  }
+  return h;
+}
+function annRow(a){
+  return '<div class="row'+(a.tier==="常规"?" dim":"")+'">'+mkBadge(a.m)+tierTag(a.tier)
+    + '<span class="co" onclick="openCo(\''+esc(a.tk)+'\')">'+esc(a.n)+'</span>'
+    + '<span class="tk num">'+esc(a.tk)+'</span>'
+    + '<span class="tt"><a href="'+esc(a.url)+'" target="_blank" rel="noopener" title="'+esc(a.t)+'">'+esc(a.t)+'</a></span>'
+    + '<span class="dt num">'+md(a.d)+'</span></div>';
+}
+function mktOf(tk){ var c=findCo(tk); return c?c.m:""; }
+function toggleTail(date,btn){
+  var el=document.getElementById("tail-"+date);
+  var open = el.style.display!=="none";
+  el.style.display = open?"none":"block";
+  btn.textContent = open? btn.textContent.replace("收起","展开其余").replace("▴","▾") : "收起常规公告 ▴";
+  if(!open) btn.textContent="收起常规公告 ▴";
+}
+function moreDays(){ state.daysShown += 3; render(); }
+
+/* ════════════ 渲染：财报模块 ════════════ */
+function finByCo(){
+  if(FEED.fin_by_co && FEED.fin_by_co.length) return FEED.fin_by_co;
+  return MOCK_FEED.fin_by_co;
+}
+function finSpark(vals){
+  var max = Math.max.apply(null, vals.map(Math.abs).concat([0.001]));
+  return '<div class="spark" style="height:26px;width:86px;flex:none">'+vals.map(function(v,i){
+    return '<i style="height:'+Math.max(6,Math.round(Math.abs(v)/max*100))+'%'+(i===vals.length-1?';background:var(--blue)':'')+'" title="'+v+' 亿"></i>';
+  }).join("")+'</div>';
+}
+function isFinEvent(e){ return /财报|决算|业绩|Q[1-4]|FY/i.test(e.event||""); }
+function finMarketLabel(m){ return {US:"美股",CN:"A股",HK:"港股",JP:"日股",EU:"欧洲"}[m]||m||"其他"; }
+function finCatalog(){
+  if(FEED.fin_catalog && FEED.fin_catalog.length) return FEED.fin_catalog;
+  var map={};
+  (FEED.fin_recent||[]).forEach(function(a){
+    var x=map[a.tk]||(map[a.tk]={n:a.n,tk:a.tk,m:a.m,count:0,latest:{}}); x.count++;
+    if(!x.latest.d||a.d>x.latest.d) x.latest={d:a.d,t:a.t,url:a.url};
+  });
+  return Object.keys(map).map(function(k){return map[k];});
+}
+function renderFinModule(){
+  // 上：未agent报日历。覆盖整个关注池；官宣、人工登记和历史节奏推算分层展示。
+  var cal = (FEED.earnings_calendar||[]).slice();
+  if(!cal.length) cal=(FEED.calendar||[]).filter(isFinEvent).map(function(e){
+    var c=findCo(e.ticker||""); return Object.assign({},e,{market:c?c.m:"",status:/待确认|估计|窗口|复核/.test(e.event||"")?"estimate":"confirmed"});
+  });
+  cal.sort(function(a,b){return a.date>b.date?1:a.date<b.date?-1:0;});
+  var win=FEED.earnings_calendar_window||{};
+  var confirmed=cal.filter(function(e){return e.status==="confirmed";}).length;
+  var registered=cal.filter(function(e){return e.status==="calendar_estimate"||e.status==="estimate";}).length;
+  var inferred=cal.filter(function(e){return e.status==="history_estimate";}).length;
+  var covered=win.covered||cal.filter(function(e){return !!e.ticker;}).length, watchlist=win.watchlist||covered;
+  var h='<div class="panel finhero"><div class="phd"><h3>未agent报日历</h3><span class="sub">算力版图覆盖公司 · 按关注日排列 · 所有市场统一收录</span></div>'
+       +'<div class="finintro"><span class="lead">先看未来：官宣日期与历史节奏候选窗严格分开，避免把估计当事实。</span>'
+       +'<span class="stat">未来 3 个月 · '+esc(win.from||"")+' → '+esc(win.through||"")+'</span><span class="stat">窗口内 '+covered+'/'+watchlist+' 家</span>'
+       +(win.extra_markets?'<span class="stat">其他市场 +'+esc(win.extra_markets)+'</span>':'')
+       +'<span class="stat">已官宣 '+confirmed+'</span><span class="stat">登记待确认 '+registered+'</span><span class="stat">历史推算 '+inferred+'</span>'
+       +'<span class="stat">'+esc(win.schedule||'每日更新')+'</span></div>';
+  if(cal.length){
+    var byDate={}; cal.forEach(function(e){(byDate[e.date]||(byDate[e.date]=[])).push(e);});
+    h+='<div class="ecal">';
+    Object.keys(byDate).sort().forEach(function(d){
+      h+='<div class="ecday"><div class="ecdate">'+esc(md(d))+'<small>'+esc(wk(d))+'</small></div><div class="ecgrid">';
+      byDate[d].forEach(function(e){
+        var click=e.ticker?' onclick="openCo(\''+esc(e.ticker)+'\')"':'';
+        var status=e.status==="confirmed"?"confirmed":(e.status==="history_estimate"?"history":"estimate");
+        var statusText=status==="confirmed"?'已官宣':(status==="history"?'历史推算':'待确认');
+        h+='<div class="eccard '+esc(e.market||"")+'"'+click+'><div class="ecname">'
+          +(e.ticker?'<span class="ectk">'+esc(e.ticker)+'</span>':'')+'<b>'+esc(e.name||e.ticker||"待确认")+'</b>'
+          +'<span class="ecstatus '+status+'">'+statusText+'</span></div>'
+          +'<div class="ecevent">'+esc((e.event||"").replace(/^复核:\s*/,""))+'</div></div>';
+      });
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }else h+='<div class="empty">未来60天暂无已登记财报关注日；系统不会用模拟数据补满。</div>';
+  h+='<div class="srcnote">仅展示未来 3 个月。日期分层：已官宣＝公司或交易所确认；待确认＝人工登记窗口；历史推算＝按该公司近三年官方财报发布日期间隔计算。后两者只用于排期，不代表公司公告；每日双班自动刷新。</div></div>';
+
+  // 下：已有财报按公司建库，不再把同一公司多份报告散落成流水。
+  var catalog=finCatalog(), summary=FEED.fin_catalog_summary||{};
+  h+='<div class="panel findb"><div class="phd"><h3>历史财报数据库</h3><span class="sub">按公司归档 · 点公司进入近三年原文、财务序列与信号</span></div>'
+    +'<div class="dbsummary"><span>覆盖 '+(summary.companies||catalog.length)+' 家</span><span>原文 '+(summary.documents||FEED.fin_total||0)+' 份</span><span>来源 SEC / HKEX / 巨潮</span></div>';
+  var order=["US","CN","HK","JP","EU"], grouped={};
+  catalog.forEach(function(c){(grouped[c.m||"OTHER"]||(grouped[c.m||"OTHER"]=[])).push(c);});
+  order.concat(Object.keys(grouped).filter(function(m){return order.indexOf(m)<0;})).forEach(function(m){
+    var rows=grouped[m]||[]; if(!rows.length)return;
+    rows.sort(function(a,b){return (b.latest&&b.latest.d||"").localeCompare(a.latest&&a.latest.d||"")||a.n.localeCompare(b.n);});
+    h+='<div class="dbmarket"><b>'+esc(finMarketLabel(m))+'</b><span>'+rows.length+' 家</span></div><div class="dbgrid">';
+    rows.forEach(function(c){var latest=c.latest||{};
+      h+='<div class="dbcard" onclick="openCo(\''+esc(c.tk)+'\')"><div class="dbhd">'+mkBadge(c.m||m)+'<b>'+esc(c.n)+'</b><span class="count">'+esc(c.count)+' 份</span></div>'
+        +'<div class="dblatest">最新 '+esc(latest.d||"待补")+' · '+esc(latest.t||"暂无标题")+'</div></div>';
+    }); h+='</div>';
+  });
+  if(!catalog.length) h+='<div class="empty">历史财报目录尚未生成</div>';
+  h+='<div class="srcnote">数据库来自一手披露底稿库；完整原文不在首页重复加载，点公司进入档案检索。</div></div>';
+  return h;
+}
+
+/* ════════════ 渲染：涌现模块（独立页）════════════ */
+function trendCoChips(cos){
+  if(!cos||!cos.length) return "";
+  return '<div class="tcos">'+cos.map(function(n){
+    var c=coList().filter(function(x){return x.n===n;})[0];
+    return c? '<span class="tco" onclick="openCo(\''+esc(c.tk)+'\')">'+esc(n)+'</span>'
+            : '<span class="tco plain">'+esc(n)+'</span>';
+  }).join("")+'</div>';
+}
+function bigSpark(seq){
+  var max=Math.max.apply(null,seq.concat([1]));
+  var dates=FEED.dates||[];
+  var bars='<div class="bspark">'+seq.map(function(v,i){
+    return '<i style="height:'+Math.max(4,Math.round(v/max*100))+'%"'+(v>0&&i>=seq.length-2?' class="hot"':'')+' title="'+(dates[i]||'')+' · '+v+' 次"></i>';
+  }).join("")+'</div>';
+  var lbls='<div class="bdates">'+seq.map(function(v,i){
+    return '<span>'+(dates[i]? dates[i].slice(8):'')+'</span>';
+  }).join("")+'</div>';
+  return bars+lbls;
+}
+var EMG_COLORS=["#F5A524","#5B8DEF","#F0554F","#3DBB77","#B08AE8","#6FB4FF","#E5615C","#8A94AC"];
+var emgSel=null; // null = 默认选频次 Top3
+function emgWords(){
+  var out=[];
+  ["玲姐尺","前哨尺"].forEach(function(k){ ((FEED.trends||{})[k]||[]).forEach(function(t){ out.push({g:k,key:k+"|"+t.w,w:t.w,seq:t.seq||[],total:t.total||0,cos:t.cos||[]}); }); });
+  return out;
+}
+function curSel(){
+  if(emgSel===null){
+    emgSel = emgWords().sort(function(a,b){ return b.total-a.total; }).slice(0,3).map(function(t){ return t.key; });
+  }
+  return emgSel;
+}
+function toggleSel(key){
+  var s=curSel(), i=s.indexOf(key);
+  if(i>=0) s.splice(i,1); else s.push(key);
+  render();
+}
+function emgWordMatch(q){
+  return emgWords().filter(function(t){ return t.w.toLowerCase().indexOf(q)>=0; }).length
+       + (FEED.hotwords||[]).filter(function(w){ return w.w.toLowerCase().indexOf(q)>=0; }).length;
+}
+function trendChart(sel){
+  var dates=FEED.dates||[];
+  var n=Math.max(dates.length, sel.length? sel[0].seq.length:0, 2);
+  var W=780,H=210,L=34,R=14,T=14,B=26;
+  var max=1; sel.forEach(function(t){ t.seq.forEach(function(v){ if(v>max)max=v; }); });
+  function x(i){ return L+(W-L-R)*(i/(n-1)); }
+  function y(v){ return T+(H-T-B)*(1-v/max); }
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  [0,Math.round(max/2),max].forEach(function(v){
+    h+='<line x1="'+L+'" y1="'+y(v)+'" x2="'+(W-R)+'" y2="'+y(v)+'" stroke="#1E2638" stroke-width="1"/>'
+     +'<text x="'+(L-6)+'" y="'+(y(v)+3)+'" text-anchor="end" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="#5A6478">'+v+'</text>';
+  });
+  for(var i=0;i<n;i++){
+    var d=dates[i]||"";
+    h+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" font-family="ui-monospace,Menlo,monospace" fill="#5A6478">'+esc(d.slice(5))+'</text>';
+  }
+  sel.forEach(function(t,si){
+    var col=EMG_COLORS[si%EMG_COLORS.length];
+    var pts=t.seq.map(function(v,i){ return x(i)+','+y(v); }).join(' ');
+    h+='<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>';
+    t.seq.forEach(function(v,i){
+      h+='<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="'+col+'"><title>'+esc(t.w)+' · '+esc(dates[i]||'')+' · '+v+' 次</title></circle>';
+    });
+  });
+  return h+'</svg>';
+}
+function renderEmgModule(filter, coHits){
+  var words = emgWords();
+  var active = filter? words.filter(function(t){ return t.w.toLowerCase().indexOf(filter)>=0; })
+                     : words.filter(function(t){ return curSel().indexOf(t.key)>=0; });
+  var h = '<div class="panel" style="margin-bottom:14px"><div style="padding:14px 16px">'
+    + '<div style="font-size:16px;font-weight:700">涌现 · 趋势雷达</div>'
+    + '<div style="font-size:12.5px;color:var(--tx2);margin-top:4px">固定词尺监控已知方向；新词雷达由 LLM 从官方披露标题与信号中采词，追踪一个术语从单家公司首现到跨公司扩散。<b style="color:var(--tx)">点选下方固定词加入趋势对比</b>，也可在搜索框直接筛词。</div>'
+    + '</div></div>';
+  if(filter){
+    h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12.5px;color:var(--tx2)">筛选 “<b style="color:var(--tx)">'+esc(state.q)+'</b>” · 命中 '+active.length+' 个趋势词'
+       + '<button class="back" style="margin:0" onclick="clearSearch()">清除筛选 ✕</button></div>';
+    if(coHits&&coHits.length){
+      h += '<div class="tcos" style="margin:0 0 12px;align-items:center"><span style="font-size:11.5px;color:var(--tx3)">同时命中公司：</span>'+coHits.map(function(c){ return '<span class="tco" onclick="openCo(\''+esc(c.tk)+'\')">'+esc(c.n)+' '+esc(c.tk)+'</span>'; }).join("")+'</div>';
+    }
+  }
+  // 选词区
+  h += '<div class="panel"><div class="phd"><h3>选词</h3><span class="sub">点击加入 / 移出对比 · 数字为近 7 日频次</span></div>';
+  [{k:"玲姐尺",hint:"产业行为"},{k:"前哨尺",hint:"新方向"}].forEach(function(g){
+    var arr = words.filter(function(t){ return t.g===g.k && (!filter || t.w.toLowerCase().indexOf(filter)>=0); })
+                   .sort(function(a,b){ return b.total-a.total; });
+    h += '<div class="trgroup"><div class="gt">'+g.k+'<span class="hint">'+g.hint+'</span></div><div class="hw" style="padding:2px 14px 10px">';
+    if(arr.length){
+      arr.forEach(function(t){
+        var ai = active.map(function(a){return a.key;}).indexOf(t.key);
+        var on = ai>=0;
+        h += '<span class="wchip'+(on?' on':'')+'" onclick="toggleSel(\''+esc(t.key)+'\')">'
+           + (on?'<i class="dot" style="background:'+EMG_COLORS[ai%EMG_COLORS.length]+'"></i>':'')
+           + esc(t.w)+'<span class="m num">'+t.total+'</span></span>';
+      });
+    } else h += '<span style="font-size:12px;color:var(--tx3)">无匹配</span>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  // 趋势对比图
+  h += '<div class="panel secgap"><div class="phd"><h3>词频趋势</h3><span class="sub">按日期 · '+(FEED.dates&&FEED.dates.length?esc(FEED.dates[0].slice(5))+' → '+esc(FEED.dates[FEED.dates.length-1].slice(5)):'近 7 天')+'</span></div>';
+  if(active.length){
+    h += '<div style="padding:12px 14px 4px">'+trendChart(active)+'</div>';
+    active.forEach(function(t,si){
+      h += '<div class="erow"><div class="ehd"><i class="dot" style="background:'+EMG_COLORS[si%EMG_COLORS.length]+'"></i><span class="w">'+esc(t.w)+'</span>'
+         + '<span class="en num">'+esc(t.g)+'</span><span class="tot num">7日 '+t.total+' 次'+(t.cos.length?' · '+t.cos.length+' 家':'')+'</span></div>'
+         + trendCoChips(t.cos) + '</div>';
+    });
+  } else h += '<div class="empty">未选词 — 在上方点选词语加入对比</div>';
+  h += '</div>';
+  var hws = (FEED.hotwords||[]).filter(function(w){ return !filter || w.w.toLowerCase().indexOf(filter)>=0; });
+  var win=FEED.hotword_window||{}, from=win.available_from||'', through=win.through||'';
+  var windowText=(from&&through?from+' → '+through:'数据积累中');
+  h += '<div class="panel secgap"><div class="phd"><h3>新词雷达</h3><span class="sub">LLM 采词 · 涌现分排序 Top 12 · '+esc(windowText)+'</span></div>';
+  if(hws.length){
+    hws=hws.slice().sort(function(a,b){ return (b.score==null?b.count*b.companies:b.score)-(a.score==null?a.count*a.companies:a.score); }).slice(0,12);
+    var maxScore=Math.max.apply(null,hws.map(function(w){return w.score==null?w.count*w.companies:w.score;}).concat([1]));
+    h += '<div class="radar-wrap"><table class="radar"><thead><tr><th>术语</th><th>涌现分</th><th class="r">近90日</th><th class="r">公司数</th><th class="r">硬信号</th><th>首现</th><th>首发者</th><th>扩散路径</th></tr></thead><tbody>';
+    hws.forEach(function(w){
+      var score=w.score==null?w.count*w.companies:w.score;
+      var first=w.first_n||w.first_tk||'';
+      var cos=(w.company_detail||[]).map(function(c){return c.n+'('+c.tk+')';}).join('、');
+      var firstHtml=first?(w.first_tk?'<span class="firstco" onclick="openCo(\''+esc(w.first_tk)+'\')">'+esc(first)+'</span>':esc(first)):'<span class="weak">待事件化</span>';
+      var path=(w.source_path&&w.source_path.length)?w.source_path.join(' → '):'公告聚合';
+      h += '<tr><td class="term" title="'+esc(cos)+'">'+esc(w.w)+'</td>'
+         + '<td class="scorecell"><div class="scoreline"><b class="num">'+score+'</b><span class="scoretrack"><i style="width:'+Math.max(5,Math.round(score/maxScore*100))+'%"></i></span></div></td>'
+         + '<td class="r num">'+w.count+'</td><td class="r num">'+w.companies+'</td><td class="r num">'+(w.capital||0)+'</td>'
+         + '<td class="num">'+(w.first_seen?esc(w.first_seen):'<span class="weak">—</span>')+'</td><td>'+firstHtml+'</td><td class="path">'+esc(path)+'</td></tr>';
+    });
+    h += '</tbody></table></div>';
+  } else h += '<div class="empty">暂无符合产业词过滤规则的新词'+(filter?'（当前筛选无匹配）':'；等待下一批披露抽取')+'</div>';
+  h += '<div class="srcnote">涌现分 = 近90日频次 × 涉及公司数；“硬信号”统计扩产 / 大额订单 / 融资 / 回购 / 并购语境。当前仅展示已有真实数据，不用 mock 补足 Top 12。'+(from?' · 实际数据起点 '+esc(from):'')+'</div></div>';
+  return h;
+}
+
+/* ════════════ 渲染：公司档案（维度二）════════════ */
+function openCo(tk){
+  state.co = tk; state.q = "";
+  var input=document.getElementById("q");
+  var c=findCo(tk); input.value = c? c.n : tk;
+  document.getElementById("qclr").style.display="block";
+  render();
+  window.scrollTo(0,0);
+  loadCo(tk).then(function(j){ if(j && state.co===tk) render(); });
+}
+function backHome(){ state.co=null; clearSearch(); }
+function sigsFor(tk){
+  var out=[];
+  (FEED.days||[]).forEach(function(d){
+    (d.signals||[]).forEach(function(s){ if(s.ticker===tk) out.push(Object.assign({date:d.date},s)); });
+  });
+  out.sort(function(a,b){ return a.date<b.date?1:-1; });
+  return out;
+}
+function miniBars(vals, unit, isPct){
+  var max = Math.max.apply(null, vals.map(Math.abs).concat([0.001]));
+  var h = '<div class="bars">';
+  vals.forEach(function(v,i){
+    var pct = Math.max(4, Math.round(Math.abs(v)/max*100));
+    h += '<div class="b'+(i===vals.length-1?" last":"")+(v<0?" neg":"")+'" style="height:'+pct+'%" title="'+v+(isPct?"%":unit)+'"></div>';
+  });
+  return h+'</div>';
+}
+function renderCoView(){
+  var tk = state.co;
+  var c = findCo(tk) || {n:tk, tk:tk, m:mktOf(tk)||""};
+  var f = FINF[tk];
+  var codata = COCACHE[tk];
+  var h = '<button class="back" onclick="backHome()">← 返回情报流</button>';
+
+  // 头卡 + 财务
+  h += '<div class="panel"><div class="cohd">'
+     + mkBadge(c.m)+'<span class="nm">'+esc(c.n)+'</span><span class="tk">'+esc(c.tk)+'</span>';
+  var cu = (f&&f.cur)||"亿元";  // 币种口径: A股亿元/美股亿美元/港股亿港元(报告货币统一铁律)
+  if(f && f.latest){
+    var latestLb = /^FY/.test(String(f.latest.date||"")) ? "最新年度" : "最新一季";
+    h += '<div class="latest"><div><div class="lb">'+latestLb+'营收</div><div class="v">'+f.latest.rev+' <span style="font-size:11px;color:var(--tx3)">'+cu+'</span></div></div>'
+       + '<div><div class="lb">'+latestLb+'归母净利</div><div class="v">'+f.latest.np+' <span style="font-size:11px;color:var(--tx3)">'+cu+'</span></div></div>'
+       + '<div><div class="lb">截至</div><div class="v" style="font-size:13px;color:var(--tx2)">'+esc(f.latest.date)+'</div></div></div>';
+  }
+  h += '</div>';
+  if(f){
+    // 表格+趋势(七看核心指标): 原始4项 + 营收增速YoY/净利率/ROE/经营现金流/含金量(Owner定案 2026-07-16)
+    var yrs = f.years||[];
+    function _yoy(a){ a=a||[]; var o=[null]; for(var i=1;i<a.length;i++){ o.push((a[i]!=null&&a[i-1])?Math.round((a[i]/a[i-1]-1)*1000)/10:null); } return o; }
+    function _rt(a,b){ return (a||[]).map(function(v,i){ var d=(b||[])[i]; return (v!=null&&d)?Math.round(v/d*1000)/10:null; }); }
+    function _gd(a,b){ return (a||[]).map(function(v,i){ var d=(b||[])[i]; return (v!=null&&d)?Math.round(v/d*100)/100:null; }); }
+    var finrows = [
+      {lb:"营收", u:cu, vals:f.rev},
+      {lb:"营收增速", u:"%", vals:_yoy(f.rev), warnNeg:1},
+      {lb:"归母净利", u:cu, vals:f.np, warnNeg:1},
+      {lb:"净利率", u:"%", vals:_rt(f.np,f.rev), warnNeg:1},
+      {lb:"毛利率", u:"%", vals:f.gm},
+      {lb:"ROE", u:"%", vals:f.roe, warnNeg:1},
+      {lb:"经营现金流", u:cu, vals:f.ocf, warnNeg:1},
+      {lb:"现金含金量", u:"×", vals:_gd(f.ocf,f.np), warnLow1:1},
+      {lb:"资本开支", u:cu, vals:f.capex}
+    ];
+    function _spark(vals){
+      var pts=[]; (vals||[]).forEach(function(v,i){ if(v!=null) pts.push([i,v]); });
+      if(pts.length<2) return '';
+      var ys=pts.map(function(p){return p[1];});
+      var mn=Math.min.apply(null,ys), mx=Math.max.apply(null,ys), rg=(mx-mn)||1, W=60, H=16, N=(vals.length-1)||1;
+      var d=pts.map(function(p){ return Math.round(p[0]/N*W)+','+(H-2-Math.round((p[1]-mn)/rg*(H-4))); }).join(' ');
+      var up=ys[ys.length-1]>=ys[0];
+      return '<svg width="'+W+'" height="'+H+'" style="vertical-align:middle"><polyline points="'+d+'" fill="none" stroke="var(--'+(up?'good':'bad')+')" stroke-width="1.5"/></svg>';
+    }
+    h += '<div style="overflow-x:auto;padding:4px 8px"><table style="width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)">'
+       + '<thead><tr><th style="text-align:left;padding:6px 10px;color:var(--tx3);font-weight:500">指标</th>';
+    yrs.forEach(function(y){ h+='<th style="text-align:right;padding:6px 8px;color:var(--tx3);font-weight:500">'+esc(y)+'</th>'; });
+    h += '<th style="text-align:center;padding:6px 8px;color:var(--tx3);font-weight:500">趋势</th></tr></thead><tbody>';
+    finrows.forEach(function(r){
+      if(!(r.vals||[]).some(function(v){ return v!=null; })) return; // 无该口径整行不显示
+      h += '<tr style="border-top:1px solid var(--line)"><td style="padding:6px 10px;color:var(--tx2);white-space:nowrap">'+r.lb+' <span style="color:var(--tx3);font-size:10.5px">'+r.u+'</span></td>';
+      r.vals.forEach(function(v,i){
+        var last=(i===r.vals.length-1);
+        var warn=(r.warnNeg&&v!=null&&v<0)||(r.warnLow1&&v!=null&&v<1);
+        h += '<td style="text-align:right;padding:6px 8px;'+(last?'font-weight:700;color:var(--tx);':'color:var(--tx2);')+(warn?'color:var(--bad);':'')+'">'+(v==null?'–':v)+'</td>';
+      });
+      h += '<td style="text-align:center;padding:3px 8px">'+_spark(r.vals)+'</td></tr>';
+    });
+    h += '</tbody></table></div>'
+       + '<div class="srcnote">末列年值加粗 · 现金含金量=经营现金流÷归母净利（&lt;1×=利润没变成现金） · 增速/净利率由序列计算 · 数据抓取于 '+esc((FINF&&FINF._generated)||'未知')+' · 财报期截至 '+esc(((f.latest||{}).date)||'')+'</div>';
+  } else {
+    h += '<div class="empty" style="border-top:1px solid var(--line)">暂无财务序列（finfacts 目前覆盖 A 股，美股/港股接入后自动显示）</div>';
+  }
+  h += '</div>';
+
+  // 深研报告(已有深稿的公司挂链·点击直达版图主站)
+  var docs = codata && codata.docs ? codata.docs : [];
+  if(docs.length){
+    h += '<div class="panel secgap"><div class="phd"><h3>深研报告</h3><span class="sub">'+docs.length+' 篇 · 版图主站</span></div>'
+       + '<div class="filelist" style="padding:10px 14px">';
+    docs.forEach(function(d){ h += '<a href="/ai-map/?doc='+esc(d.did)+'" target="_blank" rel="noopener">'+esc(d.t)+'</a>'; });
+    h += '</div></div>';
+  }
+
+  // 信号告警
+  var sigs = sigsFor(tk);
+  h += '<div class="panel secgap"><div class="phd"><h3>信号告警</h3><span class="sub">'+sigs.length+' 条</span></div>';
+  if(sigs.length){
+    sigs.forEach(function(s){
+      h += '<div class="sigrow"><span class="d num">'+md(s.date)+'</span>'+dirTag(s.dir)+'<span class="tier 重大">'+esc(s.type)+'</span>'
+         + '<span class="note" title="'+esc(s.title)+'">'+esc(s.note||s.title)+(s.amt?' · '+esc(s.amt):'')+'</span>'
+         + (s.url?'<a class="lk" style="margin-left:auto;flex:none;font-size:11.5px;color:var(--tx3)" href="'+esc(s.url)+'" target="_blank" rel="noopener">原文 ↗</a>':'')+'</div>';
+    });
+  } else h += '<div class="empty">近 7 天无信号告警</div>';
+  h += '</div>';
+
+  // 财报文件（近三年）
+  var fins = codata && codata.fins ? codata.fins : (function(){
+    var m = finByCo().filter(function(x){ return x.tk===tk; });
+    return m.length? m[0].items.map(function(it){ return {d:it.d,t:it.t,url:it.url}; }) : [];
+  })();
+  h += '<div class="panel secgap"><div class="phd"><h3>财报文件</h3><span class="sub">近三年'+(codata&&codata.fins?'':' · '+(fins.length?'演示数据':''))+'</span></div>';
+  if(fins.length){
+    h += '<div class="filelist" style="padding:10px 14px">';
+    fins.forEach(function(it){ h += '<a href="'+esc(it.url)+'" target="_blank" rel="noopener"><span class="num" style="color:var(--tx3);font-size:11px">'+esc(it.d)+'</span> '+esc(it.t)+'</a>'; });
+    h += '</div>';
+  } else h += '<div class="empty">暂无财报文件（co/'+esc(tk)+'.json 接入后显示）</div>';
+  h += '</div>';
+
+  // 公告时间线（近一年）
+  var anns = codata && codata.anns ? codata.anns.map(function(a){ return {d:a.d,tier:a.tier,t:a.t,url:a.url}; })
+           : (FEED.all||[]).filter(function(a){ return a.tk===tk; }).map(function(a){ return {d:a.d,tier:a.tier,t:a.t,url:a.url}; });
+  var seen={}; anns = anns.filter(function(a){ var k=a.d+a.t; if(seen[k]) return false; seen[k]=1; return true; });
+  anns.sort(function(a,b){ return a.d<b.d?1:-1; });
+  h += '<div class="panel secgap"><div class="phd"><h3>公告时间线</h3><span class="sub">'+(codata&&codata.anns?'近一年':'近 7 天快照')+' · '+anns.length+' 条</span></div><div class="tl">';
+  if(anns.length){
+    anns.forEach(function(a){
+      h += '<div class="tlrow"><span class="d">'+esc(a.d)+'</span>'+tierTag(a.tier)+'<span class="tt"><a href="'+esc(a.url)+'" target="_blank" rel="noopener" title="'+esc(a.t)+'">'+esc(a.t)+'</a></span></div>';
+    });
+  } else h += '<div class="empty">暂无公告记录</div>';
+  h += '</div></div>';
+  return h;
+}
+
+/* ════════════ 渲染：多命中过滤列表 ════════════ */
+function renderHits(hits){
+  var h = '<div class="panel"><div class="phd"><h3>搜索 “'+esc(state.q)+'”</h3><span class="sub">命中 '+hits.length+' 家公司 · 点击进入档案</span></div><div class="hitgrid">';
+  hits.forEach(function(c){
+    h += '<div class="hit" onclick="openCo(\''+esc(c.tk)+'\')">'+mkBadge(c.m)+'<span class="nm">'+esc(c.n)+'</span><span class="tk">'+esc(c.tk)+'</span></div>';
+  });
+  h += '</div></div>';
+  // 匹配公司的公告
+  var tks = {}; hits.forEach(function(c){ tks[c.tk]=1; });
+  var anns = (FEED.all||[]).filter(function(a){ return tks[a.tk]; });
+  anns.sort(function(a,b){ return a.d<b.d?1:-1; });
+  if(anns.length){
+    h += '<div class="panel secgap"><div class="phd"><h3>相关公告</h3><span class="sub">'+anns.length+' 条</span></div>';
+    anns.slice(0,40).forEach(function(a){ h += annRow(a); });
+    h += '</div>';
+  }
+  return h;
+}
+
+/* ════════════ 渲染：右栏 ════════════ */
+function sparkline(seq){
+  var max = Math.max.apply(null, seq.concat([1]));
+  var hotIdx = seq.lastIndexOf(Math.max.apply(null,seq));
+  return '<div class="spark">'+seq.map(function(v,i){
+    return '<i style="height:'+Math.max(6,Math.round(v/max*100))+'%"'+(v>0&&i>=seq.length-2?' class="hot"':'')+'></i>';
+  }).join("")+'</div>';
+}
+function cleanMeetingMd(s){
+  return String(s||'').replace(/^\s*>\s?/gm,'').replace(/\*\*/g,'').replace(/^\s*[-*]\s+/gm,'').trim();
+}
+function meetingThreeQ(body){
+  var out={q1:[],q2:[],q3:[]}, cur='';
+  String(body||'').split(/\n/).forEach(function(line){
+    var x=line.replace(/^\s*>\s?/,'').replace(/^\s*[-*]\s+/,'').trim();
+    if(/^\*{0,2}①\s*重大发现/.test(x)){cur='q1'; x=x.replace(/^\*{0,2}①\s*重大发现(?:\s*\+\s*来源)?\*{0,2}\s*[：:]?\s*/,'');}
+    else if(/^\*{0,2}②\s*指向什么/.test(x)){cur='q2'; x=x.replace(/^\*{0,2}②\s*指向什么(?:\s*\/\s*可能方向)?\*{0,2}\s*[：:]?\s*/,'');}
+    else if(/^\*{0,2}③\s*数据能不能对上/.test(x)){cur='q3'; x=x.replace(/^\*{0,2}③\s*数据能不能对上\*{0,2}\s*[：:]?\s*/,'');}
+    if(cur && x && !/^🎧\s*原声|^media_url\s*[:：]/i.test(x)) out[cur].push(cleanMeetingMd(x));
+  });
+  out.structured=!!(out.q1.length&&out.q2.length&&out.q3.length);
+  return out;
+}
+function meetingMediaLink(body){
+  var s=String(body||''), m=s.match(/(?:🎧\s*原声|media_url)\s*[：:]\s*(?:\[[^\]]*\]\()?<?(https?:\/\/[^\s)>`]+)/i);
+  return m?m[1].replace(/[.,，。]+$/,''):'';
+}
+function renderVerify(text){
+  var lines=cleanMeetingMd(text).split(/\n+/).filter(Boolean);
+  return lines.map(function(line){
+    var c=/^✅/.test(line)?'ok':/^⚠️/.test(line)?'warn':/^❓/.test(line)?'unknown':'';
+    return '<span class="meetverify '+c+'">'+esc(line)+'</span>';
+  }).join('');
+}
+function renderMeetingBody(body){
+  var q=meetingThreeQ(body), audio=meetingMediaLink(body), h='';
+  if(q.structured){
+    h += '<div class="meetq q1"><span class="ql">① 重大发现 + 来源</span><br>'+esc(q.q1.join('\n'))+'</div>';
+    h += '<div class="meetq q2"><span class="ql">② 指向什么 / 可能方向</span><br>'+esc(q.q2.join('\n'))+'</div>';
+    h += '<div class="meetq q3"><span class="ql">③ 数据能不能对上</span>'+renderVerify(q.q3.join('\n'))+'</div>';
+  } else {
+    h += '<div style="font-size:12px;line-height:1.65;color:var(--tx2);white-space:pre-wrap">'+esc(cleanMeetingMd(body))+'</div>';
+  }
+  if(audio) h += '<div class="meetlinks"><a href="'+esc(audio)+'" target="_blank" rel="noopener">🎧 原声 ↗</a></div>';
+  return h;
+}
+function renderMeetModule(){
+  // 电话会议独立板块(2026-07-23 CEO意见②):从公告侧栏升级为一级 tab,与公告/财报/涌现并列
+  var h = "";
+  var mt = FEED.meetings;
+  if(mt && (mt.md || (mt.media||[]).length)){
+    // 拆 采集说明(header) + 各公司块；实质命中(含★/来源/http)置顶，"本周无"折叠成一行
+    var _mp = String(mt.md||'').split(/\n## /);
+    var _mhead = _mp[0];
+    var _mhits=[], _mnull=[], _msum='';
+    _mp.slice(1).forEach(function(b){
+      var nl=b.indexOf('\n');
+      var nm=(nl<0?b:b.slice(0,nl)).replace(/^##\s*/,'').trim();
+      var bd=nl<0?'':b.slice(nl+1).trim();
+      if(nm.indexOf('汇总结论')>=0){ _msum=bd.replace(/^-+\s*/,''); return; }
+      if(/★/.test(bd) || meetingThreeQ(bd).structured) _mhits.push({name:nm,body:bd}); else _mnull.push(nm);
+    });
+    var _mi='';
+    if(_mhits.length){ _mhits.forEach(function(x){
+      _mi += '<div class="meetcard"><div class="meetname">📞 '+esc(x.name)+'</div>'+renderMeetingBody(x.body)+'</div>';
+    }); } else { _mi += '<div class="empty" style="padding:8px">本周无实质会议命中</div>'; }
+    if(_msum){ _mi += '<div style="margin:8px 0;padding:9px 12px;border-left:3px solid var(--amber);background:var(--bg2);border-radius:4px">'
+           + '<div style="font-weight:600;font-size:12px;margin-bottom:3px;color:var(--tx)">📌 本周小结</div>'
+           + '<div style="font-size:11.5px;line-height:1.6;color:var(--tx2);white-space:pre-wrap">'+esc(_msum)+'</div></div>'; }
+    if(_mnull.length){ _mi += '<div style="margin-top:8px;font-size:11.5px;color:var(--tx3);padding:6px 12px;border-top:1px dashed var(--line)">本周无命中（'+_mnull.length+'）：'+esc(_mnull.join(' / '))+'</div>'; }
+    (mt.media||[]).forEach(function(m){
+      _mi += '<div class="meetcard"><div class="meetname">🎙️ '+esc(m.name||m.ticker)+' · '+esc(m.date||'')+'</div>'
+           + '<div style="font-size:12px;line-height:1.55;color:var(--tx2)">'+esc(m.title||'公开业绩会议')+'</div><div class="meetlinks">'
+           + (m.media_url?'<a href="'+esc(m.media_url)+'" target="_blank" rel="noopener">🎧 原声/回放 ↗</a>':'')
+           + (m.transcript_url?'<a href="'+esc(m.transcript_url)+'" target="_blank" rel="noopener">📄 文字稿 ↗</a>':'')
+           + '</div></div>';
+    });
+    _mi += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11.5px;color:var(--tx3);padding:4px 12px">采集说明 / 数据源</summary>'
+         + '<div style="padding:6px 12px;font-size:11.5px;line-height:1.6;color:var(--tx3);white-space:pre-wrap">'+esc(_mhead)+'</div></details>';
+    h += '<div class="panel"><div class="phd"><h3>电话会议 · 会议原声</h3><span class="sub">'+esc(mt.date||'')+' · meeting-collector 周采 · '+_mhits.length+' 家实质命中 · 业绩电话会/高层公开讲话,可回原文核验</span></div>'
+       + '<div style="padding:10px 10px 14px">'+_mi+'</div></div>';
+  }
+
+  if(!h) h = '<div class="panel"><div class="phd"><h3>电话会议 · 会议原声</h3></div><div class="empty">本周暂无会议采集 · meeting-collector 每周采集业绩电话会与高层公开讲话</div></div>';
+
+  // CEO/大会视频逐字稿(M1 YouTube腿·官方频道白名单·2026-07-23)
+  var yts = FEED.yt_talks || [];
+  if(yts.length){
+    h += '<div class="panel secgap"><div class="phd"><h3>CEO / 大会视频逐字稿</h3><span class="sub">'
+       + yts.length+' 条 · 官方频道白名单(S级一手) · M1 每日 09:10 采集 · 英文原文,引用回视频时间戳</span></div>'
+       + '<div style="padding:8px 12px 14px">';
+    yts.forEach(function(y){
+      h += '<details style="border:1px solid var(--line);border-radius:7px;padding:8px 12px;margin:7px 0">'
+         + '<summary style="cursor:pointer;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+         + '<span class="tier 会议">'+esc(y.ch||"")+'</span>'
+         + '<span class="num" style="font-size:11px;color:var(--tx3)">'+esc(y.d||"")+'</span>'
+         + '<span style="font-weight:600;font-size:13px">'+esc(y.t||"")+'</span>'
+         + '<span class="num" style="font-size:10.5px;color:var(--tx3)">'+Math.round((y.chars||0)/1000)+'k字符</span></summary>'
+         + '<div style="font-size:12px;color:var(--tx2);line-height:1.7;white-space:pre-wrap;margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">'+esc(y.ex||"")+'…</div>'
+         + '<div style="margin-top:6px"><a class="lk" href="'+esc(y.url||"")+'" target="_blank" rel="noopener" style="font-size:11.5px">完整视频/逐字稿 ↗</a></div>'
+         + '</details>';
+    });
+    h += '</div></div>';
+  }
+  return h;
+}
+
+/* ── 公告简读:规则引擎给每条信号/重大公告一句「为什么」 ── */
+var BRIEF_REASON = {
+  "融资稀释": "发行新股/可转债会摊薄现有股东权益——股本扩大、每股收益被稀释;零息或低息转债意味着发行方预期以转股方式偿付。关注发行规模占总股本比例与定价折让幅度。",
+  "回购增持": "公司或大股东用真金白银买入,通常是认为价值被低估的信号。注意「建议授予/授权」不等于已执行,后续要盯实际回购金额与节奏。",
+  "并购重组": "资产边界发生变化——可能带来业务协同,也可能埋下商誉减值风险,方向取决于标的质量与对价水平。",
+  "人事变动": "核心高管变动影响战略连续性;董秘/财务负责人异动尤其要留意,有时先于业绩或合规问题出现。",
+  "技术突破": "指向产品力或成本曲线改善,但公告级「突破」必须与订单/量产数据对照验证,防概念先行。",
+  "扩产":     "产能扩张=管理层对未来需求的下注;若全行业同时扩产,按 PTSD 尺警惕两年后的过剩周期。",
+  "价格变动": "产品/原料价格变化直接传导毛利率;先确认是行业性还是公司性——行业性涨价利好全链条头部。",
+  "监管牌照": "资质与合规边界变化决定业务能不能做:拿到=准入利好;被查/被限=不确定性上升。"
+};
+function briefCards(){
+  // 兜底路径:briefs 库为空时,用近 N 天信号 + 类型模板(与 v1 相同)
+  var days = daysSorted().slice(0, state.daysShown);
+  var cards = [];
+  days.forEach(function(day){
+    var sigs = day.signals && day.signals.length ? day.signals : (day.alerts||[]);
+    sigs.forEach(function(sg){ cards.push({d: day.date, s: sg}); });
+  });
+  return cards;
+}
+function briefChipRow(d, m, dir, type, tk, name){
+  return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">'
+       + '<span class="num" style="font-size:10.5px;color:var(--tx3)">'+md(d)+'</span>'
+       + mkBadge(m||"") + dirTag(dir)
+       + (type?'<span class="tier 重大">'+esc(type)+'</span>':'')
+       + '<span class="co" onclick="openCo(\''+esc(tk||"")+'\')" style="font-weight:600;font-size:12.5px">'+esc(name||"")+'</span></div>';
+}
+function analysisList(items){
+  if(!items||!items.length) return '<div class="anatext weak">暂无</div>';
+  return '<ul class="analist">'+items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>';
+}
+function renderStructuredAnalysis(b){
+  var a=b.analysis||{}, src=b.source||{};
+  var h='<div class="anasec"><div class="analabel">核心观点</div><div class="anatext">'+esc(a.core_view||"待核验")+'</div></div>'
+       +'<div class="anasec"><div class="analabel">核心结论</div><div class="anatext anaconclusion">'+esc(a.core_conclusion||"尚不能判断")+'</div></div>'
+       +'<div class="anasec"><div class="analabel">财报证据</div><div class="evidence">';
+  (a.evidence||[]).forEach(function(e){
+    h+='<div class="evline"><b>'+esc(e.metric||"指标")+'：</b><span>'+esc(e.value||"未抽取")
+      +(e.comparison?' · '+esc(e.comparison):'')+'</span><div class="evsrc">'+esc(e.source_location||"正文摘录未覆盖")+'</div></div>';
+  });
+  if(!(a.evidence||[]).length) h+='<div class="anatext weak">正文数据尚未抽取</div>';
+  h+='</div></div><div class="anasec"><div class="analabel">可能影响</div>'+analysisList(a.impacts)+'</div>'
+    +'<div class="anasec"><div class="analabel">风险 / 证伪</div>'+analysisList((a.risks||[]).concat(a.missing||[]))+'</div>'
+    +'<div class="anasec"><div class="analabel">数据源</div><div class="sourcebox">'+esc(src.provider||"官方披露")
+    +(src.form?' · '+esc(src.form):'')+(src.title?' · '+esc(src.title):'')+'</div></div>';
+  return h;
+}
+function renderBriefRail(){
+  // 按 tab 分流(2026-07-23):公告栏看非财报解读;财报栏看「财报披露·本季核对三问」
+  var isFinBrief = function(b){ return b.type === "财报披露"; };
+  var briefs = (FEED.briefs || []).filter(state.module === "fin" ? isFinBrief : function(b){ return !isFinBrief(b); });
+  var h = "";
+  if(briefs.length){
+    // 主路径:解读时间轴(2026-07-23 CEO需求)——逐条AI分析,新→旧,历史永久累积
+    var briefedKeys = {};
+    briefs.forEach(function(b){ briefedKeys[(b.tk||"")+"|"+(b.t||"").slice(0,30)] = 1; });
+    // 当日已出信号但分析还没生成的(两班之间的新公告)→ 模板兜底置顶
+    var pend = [];
+    var today = (daysSorted()[0]||{}).date;
+    if(today){
+      var td = (FEED.days||[]).filter(function(x){ return x.date===today; })[0];
+      var sigs = td && td.signals ? td.signals : [];
+      sigs.forEach(function(sg){
+        if(!briefedKeys[(sg.ticker||"")+"|"+(sg.title||"").slice(0,30)]) pend.push(sg);
+      });
+    }
+    var railTitle = state.module === "fin" ? "财报解读" : "解读";
+    var railSub = state.module === "fin"
+      ? briefs.length+' 条 · 结论—证据—影响—风险 · 重要财报触发投研底稿更新(人审)'
+      : briefs.length+' 条累积 · 逐条分析为什么 · 新的在上、历史一直保留 · 结论以原文为准';
+    h += '<div class="panel fill"><div class="phd"><h3>'+railTitle+'</h3><span class="sub">'+railSub+'</span></div>'
+       + '<div style="padding:8px 10px;flex:1;min-height:0;overflow-y:auto">';
+    pend.forEach(function(sg){
+      var reason = BRIEF_REASON[sg.type] || "该类事件方向取决于具体条款,以原文为准。";
+      h += '<div style="border:1px dashed var(--line);border-radius:7px;padding:9px 11px;margin:7px 0;opacity:.85">'
+         + briefChipRow(sg.date||today, sg.market, sg.dir, sg.type, sg.ticker, sg.name)
+         + '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:5px">'+esc(sg.note&&sg.note!==sg.title?sg.note:(sg.title||""))+'</div>'
+         + '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;border-top:1px dashed var(--line);padding-top:5px">→ '+esc(reason)+'</div>'
+         + '<div style="margin-top:4px;font-size:10.5px;color:var(--amber)">⏳ 深度分析下一班生成(每日 07:00 / 19:30)</div>'
+         + (sg.url?'<div style="margin-top:3px"><a class="lk" href="'+esc(sg.url)+'" target="_blank" rel="noopener" style="font-size:11px">原文 ↗</a></div>':'')
+         + '</div>';
+    });
+    var lastD = "";
+    briefs.forEach(function(b){
+      if(b.d !== lastD){
+        lastD = b.d;
+        h += '<div style="display:flex;align-items:baseline;gap:8px;margin:10px 0 2px;padding:4px 2px;border-bottom:1px solid var(--line)"><span class="num" style="font-size:13px;font-weight:700">'+esc(b.d)+'</span><span style="font-size:11px;color:var(--tx2)">'+wk(b.d)+'</span></div>';
+      }
+      var detail = b.analysis_schema>=2 && b.analysis ? renderStructuredAnalysis(b)
+        : '<div class="anasec"><div class="analabel">旧版解读</div><div class="anatext" style="white-space:pre-wrap">'+esc(b.brief||"")+'</div></div>';
+      h += '<div style="border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin:7px 0">'
+         + briefChipRow(b.d, b.m, b.dir, b.type, b.tk, b.n)
+         + '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:6px;font-weight:600">'+esc(b.t||"")+'</div>'
+         + detail
+         + '<div style="margin-top:5px;display:flex;gap:10px;align-items:center">'
+         + (b.url?'<a class="lk" href="'+esc(b.url)+'" target="_blank" rel="noopener" style="font-size:11px">原文 ↗</a>':'')
+         + '<span style="font-size:10px;color:var(--tx3)">分析生成 '+esc(b.gen_at||"")+'</span></div>'
+         + '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+  // 财报栏空态:不落公告模板,给专属提示(新财报披露后 briefs 自动生成)
+  if(state.module === "fin"){
+    return '<div class="panel"><div class="phd"><h3>财报解读</h3><span class="sub">核心结论 · 财报证据 · 影响 · 风险</span></div>'
+         + '<div class="empty" style="padding:14px">暂无财报解读 —— 下一份财报披露后自动生成(每日 07:00 / 19:30 两班)。7 月 28 日起微软/谷歌/亚马逊集中披露,届时此栏点亮。</div></div>';
+  }
+  // 兜底:briefs 尚未生成时维持 v1 模板卡片
+  var cards = briefCards();
+  h = '<div class="panel"><div class="phd"><h3>解读</h3><span class="sub">'+cards.length+' 条 · 近 '+Math.min(state.daysShown,(FEED.days||[]).length)+' 天利空/利好/中性与重大公告 · 滚动查看 · 结论以原文为准</span></div>';
+  if(!cards.length){ h += '<div class="empty">近期无信号/重大公告</div></div>'; return h; }
+  h += '<div style="padding:8px 10px;max-height:72vh;overflow-y:auto">';
+  cards.forEach(function(c){
+    var sg = c.s;
+    var reason = BRIEF_REASON[sg.type] || "该类事件方向取决于具体条款,以原文为准。";
+    var fact = sg.note && sg.note !== sg.title ? sg.note : (sg.title||"");
+    h += '<div style="border:1px solid var(--line);border-radius:7px;padding:9px 11px;margin:7px 0">'
+       + briefChipRow(c.d, sg.market, sg.dir, sg.type, sg.ticker, sg.name)
+       + '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:5px">'+esc(fact)+(sg.amt?' · '+esc(sg.amt):'')+'</div>'
+       + '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;border-top:1px dashed var(--line);padding-top:5px">→ '+esc(reason)+'</div>'
+       + (sg.url?'<div style="margin-top:4px"><a class="lk" href="'+esc(sg.url)+'" target="_blank" rel="noopener" style="font-size:11px">原文 ↗</a></div>':'')
+       + '</div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+function renderRail(){
+  // 2026-07-23 重排(CEO意见①③④):公告页侧栏=简读+公告类时间节点;
+  // 涌现速览撤除(涌现自己看);会议原声升级为独立 tab;财报日历已在财报页「即将披露」
+  var h = "";
+  if(state.module === "ann" && !state.co){
+    h += renderBriefRail();
+    var isFin = function(e){ return /财报|决算|业绩|Q[1-4]|FY/i.test(e.event||""); };
+    var cal = (FEED.calendar||[]).filter(function(e){ return !isFin(e); })
+              .sort(function(a,b){ return a.date>b.date?1:-1; });
+    h += '<div class="panel"><div class="phd"><h3>时间节点</h3><span class="sub">未来 3 周 · 仅公告类事件(财报日历见「财报」页)</span></div>';
+    if(cal.length){
+      cal.forEach(function(e){
+        h += '<div class="calrow"><span class="d num">'+md(e.date)+'</span><span class="pri '+esc(e.pri)+'">'+esc(e.pri)+'</span>'
+           + '<span class="ev"><span class="who">'+esc(e.name)+'</span> · '+esc(e.event)+'</span></div>';
+      });
+    } else {
+      h += '<div class="empty" style="padding:10px">近三周暂无公告类关键事件</div>';
+    }
+    h += '<div class="srcnote">'+(LIVE?'LIVE · '+esc(FEED.generated):'MOCK 快照 · '+esc(FEED.generated))+'</div></div>';
+  } else if(state.module === "fin" && !state.co){
+    // 财报页右栏只保留待分析内容；未agent报日历已经移到主区顶部。
+    h += renderBriefRail();
+  } else if(state.module === "meet" && !state.co){
+    // 电话会议页右栏:即将的业绩会/电话会日历(方式与财报一致)
+    var isCallEv = function(e){ return /财报|决算|业绩|电话会|说明会|Q[1-4]|FY/i.test(e.event||""); };
+    var mcal = (FEED.calendar||[]).filter(isCallEv).sort(function(a,b){ return a.date>b.date?1:-1; });
+    h += '<div class="panel"><div class="phd"><h3>时间节点</h3><span class="sub">未来 3 周 · 即将召开的业绩会/电话会</span></div>';
+    if(mcal.length){
+      mcal.forEach(function(e){
+        h += '<div class="calrow"><span class="d num">'+md(e.date)+'</span><span class="pri '+esc(e.pri)+'">'+esc(e.pri)+'</span>'
+           + '<span class="ev"><span class="who">'+esc(e.name)+'</span> · '+esc(e.event)+'</span></div>';
+      });
+    } else { h += '<div class="empty" style="padding:10px">近三周暂无会议日历</div>'; }
+    h += '<div class="srcnote">'+(LIVE?'LIVE · '+esc(FEED.generated):'MOCK · '+esc(FEED.generated))+'</div></div>';
+  } else {
+    h += '<div class="panel"><div class="srcnote">'+(LIVE?'LIVE · '+esc(FEED.generated):'MOCK 快照 · '+esc(FEED.generated))+'</div></div>';
+  }
+  return h;
+}
+
+/* ════════════ 主渲染 ════════════ */
+function render(){
+  var main = document.getElementById("main");
+  document.getElementById("gen").textContent = (LIVE?"● LIVE ":"○ MOCK ")+ (FEED.generated||"");
+  document.getElementById("gen").style.color = LIVE? "var(--bad)":"var(--tx3)";
+  if(state.co){
+    main.innerHTML = renderCoView();
+  } else if(state.q.trim()){
+    var qq = state.q.trim().toLowerCase();
+    var hits = matchCos(state.q);
+    if(state.module==="emg" && emgWordMatch(qq)>0){
+      main.innerHTML = renderEmgModule(qq, hits);
+    }
+    else if(hits.length===1){ state.co = hits[0].tk; main.innerHTML = renderCoView(); loadCo(hits[0].tk).then(function(j){ if(j) render(); }); }
+    else if(hits.length===0){ main.innerHTML = '<div class="panel"><div class="empty">无匹配'+(state.module==="emg"?'词语或':'')+'公司：“'+esc(state.q)+'” · 覆盖 '+coList().length+' 家算力产业链公司</div></div>'; }
+    else main.innerHTML = renderHits(hits);
+  } else {
+    main.innerHTML = state.module==="ann" ? renderAnnModule() : state.module==="fin" ? renderFinModule() : state.module==="meet" ? renderMeetModule() : renderEmgModule();
+  }
+  document.getElementById("rail").innerHTML = renderRail();
+  document.getElementById("tabAnn").className = state.module==="ann"&&!state.co&&!state.q?"on":"";
+  document.getElementById("tabFin").className = state.module==="fin"&&!state.co&&!state.q?"on":"";
+  document.getElementById("tabMeet").className = state.module==="meet"&&!state.co&&!state.q?"on":"";
+  document.getElementById("tabEmg").className = state.module==="emg"&&!state.co?"on":"";
+}
+function setModule(m){ state.module=m; state.co=null; state.q=""; syncSearch();
+  document.getElementById("q").placeholder = m==="emg"? "筛选词语 / 公司名 / 代码…" : "搜公司名 / 代码 → 直达公司档案";
+  render(); }
+function clearSearch(){ state.q=""; state.co=null; syncSearch(); render(); }
+function syncSearch(){
+  var i=document.getElementById("q"); i.value=state.q;
+  document.getElementById("qclr").style.display = state.q?"block":"none";
+}
+
+document.getElementById("q").addEventListener("input", function(e){
+  state.q = e.target.value; state.co = null;
+  document.getElementById("qclr").style.display = state.q?"block":"none";
+  render();
+});
+document.getElementById("q").addEventListener("keydown", function(e){
+  if(e.key==="Escape") clearSearch();
+});
+
+render();
+loadData();
+</script>
+
+
+</body></html>

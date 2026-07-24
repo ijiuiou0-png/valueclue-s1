@@ -1,0 +1,10 @@
+.env
+*.env
+api-keys.env
+__pycache__/
+*.pyc
+*.bak*
+data/
+briefs/
+disclosures/
+by_company/
